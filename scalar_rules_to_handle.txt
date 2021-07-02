@@ -1,0 +1,69 @@
+remember to order terms if commutative
+TODO:
+ - add in more rules for ALL functions in readme
+ - implement Fu
+ - expand for all functions
+
+basic operations:
+(a+b+c+..)*(d+e+f+..)*... -> a*d*... + a*e*... + ... + b*d*... + ...
+(a+b)^n -> a^n + na^(n-1)b^n + ... + b^n (can have (a+b+c+...)^n by letting b <- b+c+...)
+a / b <-> ab^-1
+a - b <-> a + -1*b
+(a^b)^c -> a^(bc)
+x * x^2 -> x^(1+2)
+x^2 + 3*y^-0.5x -> xy^-1*(x*y + 3y^0.5)
+
+Boolean:
+a</>/>=/<=b -> true or false if max(a) </>/>=/<= min(b) (e.g. x^2 >= -x^2 -> true)
+a==/!=b -> true if same expression and false if different and independent of input (e.g. x == x -> true, 1 == 2 -> false, but x == y is unchanged)
+implicit boolean conversion -> true if can never be 0, and eval if independent of input (e.g. x and (x^2+1) -> x and false)
+a and/or a -> a
+a and not a -> false
+a or not a -> true
+a or b and c <-> (a or b)(a or c)
+a and (b or c) <-> a and b or a and c
+true and x -> x
+false and x -> false
+true or x -> true
+false or x -> false
+a and (a or b) -> a
+a or a and b -> a
+not (a and b) <-> not a or not b
+not (a or b) <-> not a and not b
+
+literals:
+convert to and from prime factors (e.g. 4 <-> 2^2)
+evaluate literal expressions if go to integer (e.g. 2+3 -> 5)
+1*x -> x
+0 + x -> x
+0*x -> 0
+
+trig (Fu):
+sin2(a) -> 1 - cos2(a) (CTR1 -> use with polynomials)
+cos2(a) -> 1 - sin2(a) (CTR1 -> use with polynomials)
+cos2(a) -> (1 + cos(2a))/2
+sin(0), cos(0), tan(0) -> 0, 1, 0 (CTR4 -> use reverse with TR10)
+sin(pi/6), cos(pi/6), tan(pi/6) -> 1/2, 3^0.5/2, 3^0.5/3 (^)
+sin(pi/4), cos(pi/4), tan(pi/4) -> 2^0.5/2, 2^0.5/2, 1 (^)
+sin(pi/3), cos(pi/3), tan(pi/3) -> 3^0.5/2, 1/2, 3^0.5 (^)
+sin(pi/2), cos(pi/2) -> 1, 0 (^)
+sin(a)cos(b) <-> (sin(a+b)+sin(a-b))/2 (CTR3 -> use with TR10)
+cos(a)sin(b) <-> (sin(a+b)-sin(a-b))/2 (^)
+cos(a)cos(b) <-> (cos(a+b)+cos(a-b))/2 (^)
+sin(a)sin(b) <-> -(cos(a+b)-cos(a-b))/2 (^)
+sin(a)+sin(b) <-> 2sin((a+b)/2)cos((a-b)/2)
+sin(a)-sin(b) <-> 2cos((a+b)/2)sin((a-b)/2)
+cos(a)+cos(b) <-> 2cos((a+b)/2)cos((a-b)/2)
+cos(a)-cos(b) <-> -2sin((a+b)/2)sin((a-b)/2)
+sin(a+b) <-> sin(a)cos(b) + cos(a)sin(b) (TR10)
+sin(a-b) <-> sin(a)cos(b) - cos(a)sin(b) (TR10)
+cos(a+b) <-> cos(a)cos(b) - sin(a)sin(b) (TR10)
+cos(a-b) <-> cos(a)cos(b) + sin(a)sin(b) (TR10)
+sin(2a) <-> 2sin(a)cos(a) (CTR2 -> use wth pythag ident)
+cos(2a) <-> cos2(a)-sin2(a) = 2cos2(a) - 1 = 1 - 2sin2(a) (CTR2 -> use wth pythag ident)
+tan(a)tan(b) <-> 1 - (tan(a) + tan(b))cot(a+b)
+cot(a)cot(b) <-> 1 + (cot(a) + cot(b))cot(a+b)
+
+other:
+nCr <-> n!/(r!(n-r)!)
+nPr <-> n!/((n-r)!)
