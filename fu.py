@@ -21,21 +21,21 @@ test = node("-", terms[0], node("+", terms[1], node("+", terms[2], terms[3])))  
 
 def fu(graph):
 
-    if check_operator("sec") or check_operator("csc"):
+    if check_operator(graph, "sec") or check_operator(graph, "csc"):
         graph = TR1(graph)
 
-    if check_operator("tan") or check_operator("cot"):
+    if check_operator(graph, "tan") or check_operator(graph, "cot"):
         RL1_graph = RL1(graph)
 
         if count_trig_ops(graph) > count_trig_ops(RL1_graph):  # only apply Rule 1 if it reduces L(graph)
             graph = RL1_graph
 
-        if check_operator("tan") or check_operator("cot"):
+        if check_operator(graph, "tan") or check_operator(graph, "cot"):
             graph = TR2(graph)
 
     graph = TR0(graph)
 
-    if check_operator("sin") or check_operator("cos"):
+    if check_operator(graph, "sin") or check_operator(graph, "cos"):
         graph = RL2(graph)
 
     return ""
@@ -50,7 +50,10 @@ def check_operator(graph, op):  # check if an operator is present in the graph
         return False
     if graph.op == op:
         return True
-    return any(check_operator(i) for i in graph.vals)
+    return any(check_operator(i, op) for i in graph.vals)
+
+def TR0(graph):
+    return ""
 
 def TR1(graph):  # replace sec and cosec
 
@@ -134,6 +137,7 @@ def RL1(graph):
     return 
 
 def RL2(graph):
+    return ""
 
 def get_rpn(graph):  # for printing the graph in reverse polish notation
     if type(graph) == str:
