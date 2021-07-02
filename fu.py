@@ -38,7 +38,7 @@ def fu(graph):
     if check_operator(graph, "sin") or check_operator(graph, "cos"):
         graph = RL2(graph)
 
-    return ""
+    return graph
 
 def count_trig_ops(graph):  # count trig operations in graph
     if type(graph) == str:
@@ -53,7 +53,7 @@ def check_operator(graph, op):  # check if an operator is present in the graph
     return any(check_operator(i, op) for i in graph.vals)
 
 def TR0(graph):
-    return ""
+    return graph
 
 def TR1(graph):  # replace sec and cosec
 
@@ -68,9 +68,9 @@ def TR1(graph):  # replace sec and cosec
 
 
 def TR2(graph):
-    return ""
+    return graph
 def TR3(graph):
-    return ""
+    return graph
 
 def TR4(graph):  # special angles
 
@@ -105,31 +105,31 @@ def TR4(graph):  # special angles
 
 
 def TR5(graph):
-    return ""
+    return graph
 def TR6(graph):
-    return ""
+    return graph
 def TR7(graph):
-    return ""
+    return graph
 def TR8(graph):
-    return ""
+    return graph
 def TR9(graph):
-    return ""
+    return graph
 def TR10(graph):
-    return ""
+    return graph
 def TR11(graph):
-    return ""
+    return graph
 def TR12(graph):
-    return ""
+    return graph
 def TR13(graph):
-    return ""
+    return graph
 def CTR1(graph):
-    return ""
+    return graph
 def CTR2(graph):
-    return ""
+    return graph
 def CTR3(graph):
-    return ""
+    return graph
 def CTR4(graph):
-    return ""
+    return graph
 
 def RL1(graph):
     for TrigExpr in [TR4, TR3, TR4, TR12, TR4, TR13, TR4, TR0]:
@@ -137,7 +137,7 @@ def RL1(graph):
     return 
 
 def RL2(graph):
-    return ""
+    return graph
 
 def get_rpn(graph):  # for printing the graph in reverse polish notation
     if type(graph) == str:
