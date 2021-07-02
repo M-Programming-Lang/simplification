@@ -3,6 +3,8 @@ TODO:
  - add in more rules for ALL functions in readme
  - implement Fu
  - expand for all functions
+return shortest of expanded and not expanded
+start at bottom and work up searching for patterns in order
 
 basic operations:
 (a+b+c+..)*(d+e+f+..)*... -> a*d*... + a*e*... + ... + b*d*... + ...
@@ -12,6 +14,7 @@ a - b <-> a + -1*b
 (a^b)^c -> a^(bc)
 x * x^2 -> x^(1+2)
 x^2 + 3*y^-0.5x -> xy^-1*(x*y + 3y^0.5)
+1/x + 1/y -> (x+y)/(xy)
 
 Boolean:
 a</>/>=/<=b -> true or false if max(a) </>/>=/<= min(b) (e.g. x^2 >= -x^2 -> true)
@@ -30,10 +33,12 @@ a and (a or b) -> a
 a or a and b -> a
 not (a and b) <-> not a or not b
 not (a or b) <-> not a and not b
+a^0 -> 1
 
 literals:
 convert to and from prime factors (e.g. 4 <-> 2^2)
-evaluate literal expressions if go to integer (e.g. 2+3 -> 5)
+convert from float (e.g. 1.2 -> 6/5, and 1.1111... -> 10/9)
+evaluate literal expressions if go to integer (e.g. 2+3 -> 5 or 2^(2x) -> 4^x)
 1*x -> x
 0 + x -> x
 0*x -> 0
@@ -64,6 +69,37 @@ cos(2a) <-> cos2(a)-sin2(a) = 2cos2(a) - 1 = 1 - 2sin2(a) (CTR2 -> use wth pytha
 tan(a)tan(b) <-> 1 - (tan(a) + tan(b))cot(a+b)
 cot(a)cot(b) <-> 1 + (cot(a) + cot(b))cot(a+b)
 
+logs:
+log(n)(n)
+log(xy) <-> log(x) + log(y)
+log(x/y) <-> log(x) - log(y)
+log(1) -> 0
+log(x^y) -> ylog(x)
+log(a)(b) <-> log(c)(b)/log(c)(a)
+log(a)(b) <-> 1/log(b)(a)
+
+sums:
+int(f(y)g(x)dx) -> f(y)int(g(x)dx) (and same for sum)
+sum^n(1) = n (and same for int)
+sum(f(x) + g(x)) <-> sum(f(x)) + sum(g(x))
+sum^n(x) -> n(n+1)/2
+sum^n(x^2) -> n(n+1)(2n+1)/6
+sum^n(x^3) -> n^2(n+1)^2/4
+a+ar+ar^2+...+ar^(n-1) -> a(1-r^n)/(1-r)
+sum^n(g(x)-g(x+a)) = sum^(a-1)(g(x))-sum^(n+a)_(n+1)(g(x))
+
 other:
 nCr <-> n!/(r!(n-r)!)
 nPr <-> n!/((n-r)!)
+|a|*|b| <-> |ab|
+|a|*/^n <-> |a/*/^n|
+f^-1(f(x)) -> x
+fold piecewise (x * (x if x > 0, 0 otherwise) -> x^2 if x > 0, 0 otherwise)
+a if a == 0 and a + b ==0, 1 otherwise -> 0 if n == 0 == m, 1 otherwise
+a if false, b otherwise -> b
+f(n) if x == n, f(x) othwewise -> f(x)
+a!/(a-n)! -> a(a-1)(a-2)...(a-n+1)
+sign evaluated where poss: sign(x^2+1) -> 1
+element evaluated where poss: a AND b E {true, false} -> true
+max(a*f(x)) -> a*max(f(x))
+add hyperbolic simplification like trig + matching with exponential form
