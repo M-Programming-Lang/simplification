@@ -44,6 +44,15 @@ evaluate literal expressions if go to integer (e.g. 2+3 -> 5 or 2^(2x) -> 4^x)
 0*x -> 0
 
 trig (Fu):
+sec(a) <-> 1/cos(a)
+csc(a) <-> 1/sin(a)
+tan(a) <-> sin(a)/cos(a)
+cot(a) <-> cos(a)/sin(a)
+sin(-a), cos(-a), tan(-a), cot(-a) <-> -sin(a), cos(a), -tan(a), -cot(a)
+sin(pi-a), cos(pi-a), tan(pi-a), cot(pi-a) <-> sin(a), -cos(a), -tan(a), -cot(a)
+sin(pi+a), cos(pi+a), tan(pi+a), cot(pi+a) <-> -sin(a), -cos(a), tan(a),  cot(a)
+sin(2pi-a), cos(2pi-a), tan(2pi-a), cot(2pi-a) <-> -sin(a), cos(a), -tan(a), -cot(a)
+sin(2kpi+a), cos(2kpi+a), tan(2kpi+a), cot(2kpi+a) <-> sin(a), cos(a), tan(a), cot(a)
 sin2(a) -> 1 - cos2(a) (CTR1 -> use with polynomials)
 cos2(a) -> 1 - sin2(a) (CTR1 -> use with polynomials)
 cos2(a) -> (1 + cos(2a))/2
