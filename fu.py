@@ -6,7 +6,7 @@
 # see:
 # 0. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L1650
 # 1. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L1555
-# 2. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L210
+# 2. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L899
 
 from math import pi
 
@@ -65,6 +65,14 @@ def check_operator(graph, op):  # check if an operator is present in the graph
         return True
     return any(check_operator(i, op) for i in graph.vals)
 
+def negative_to_infix(graph):  # convert a + (-b) to a - b
+    if graph in [node("+", "_", node("-", "_")), node("+", node("-", "_"), "_")]:
+        idx = 0
+        if type(graph.vals[0]) == str and graph.vals[0].op == "-" and len(graph.vals[0].vals) == 1:
+            idx = 1
+        return node("-", graph.vals[idx], graph.vals[abs(idx-1)].vals[0])
+    return graph
+
 def TR0(graph):
     # remember to convert prefix - to infix - and 0 - x to -x
     return graph
@@ -96,34 +104,34 @@ def TR3(graph):  # e.g. sin(-x) -> -sin(x)
             v = graph.vals[0]
 
             if v == node("-", "_"):  # -x
-                if graph.op == "cos": return node("cos", v.vals[0])  # cos(-x) = cos(x)
-                return node("-", node(graph.op, v.vals[0]))  # sin/tan/cot(-x) = -sin/tan/cot(x)
+                if graph.op == "cos": return node("cos", TR3(v.vals[0]))  # cos(-x) = cos(x)
+                return node("-", node(graph.op, TR3(v.vals[0])))  # sin/tan/cot(-x) = -sin/tan/cot(x)
             if v == node("-", "pi", "_"):  # pi - x
-                if graph.op == "sin": return node("sin", v.vals[1])  # sin(pi - x) = sin(x)
-                return node("-", node(graph.op, v.vals[1]))  # cos/tan/cot(pi - x) = -cos/tan/cot(pi - x)
+                if graph.op == "sin": return node("sin", TR3(v.vals[1]))  # sin(pi - x) = sin(x)
+                return node("-", node(graph.op, TR3(v.vals[1])))  # cos/tan/cot(pi - x) = -cos/tan/cot(pi - x)
             if v in [node("+", "pi", "_"), node("+", "_", "pi")]:  # pi + x
                 idx = 0
                 if v.vals[0] == "pi":  # dealing with commutativity
                     idx = 1
-                if graph.op in ["tan", "cot"]: return node(graph.op, v.vals[idx])  # tan/cot(pi + x) = tan/cot(x)
-                return node("-", node(graph.op, v.vals[idx]))  # sin/cos(pi + x) = -sin/cos(x)
+                if graph.op in ["tan", "cot"]: return node(graph.op, TR3(v.vals[idx]))  # tan/cot(pi + x) = tan/cot(x)
+                return node("-", node(graph.op, TR3(v.vals[idx])))  # sin/cos(pi + x) = -sin/cos(x)
             if v in [node("-", node("*", "2", "pi"), "_"), node("-", node("*", "pi", "2"), "_")]:  # 2pi - x (is this not redundant?)
-                if graph.op == "cos": return node("cos", v.vals[1])  # cos(2pi - x) = cos(x)
-                return node("-", node(graph.op, v.vals[1]))  # sin/tan/cot(2pi - x) = -sin/tan/cot(x)
+                if graph.op == "cos": return node("cos", TR3(v.vals[1]))  # cos(2pi - x) = cos(x)
+                return node("-", node(graph.op, TR3(v.vals[1])))  # sin/tan/cot(2pi - x) = -sin/tan/cot(x)
             if v in [node("+", node("*", "_", "pi"), "_"), node("+", node("*", "pi", "_"), "_")] and \
                     type(v.vals[0].vals[0]) == str == type(v.vals[0].vals[1]) and \
                     eval("*".join(v.vals[0].vals)+"/pi")%2 == 0:  # 2kpi + x (but not x + 2kpi)
                 idx = 1
                 if v == node("+", node("*", "pi", "_"), "_") and v.vals[0].vals[0] == "pi":
                     idx = 0
-                return node(graph.op, v.vals[idx])  # sin/cos/tan/cot(2kpi + x) = sin/cos/tan/cot(x)
+                return node(graph.op, TR3(v.vals[idx]))  # sin/cos/tan/cot(2kpi + x) = sin/cos/tan/cot(x)
             if v in [node("+", "_", node("*", "_", "pi")), node("+", "_", node("*", "pi", "_"))] and \
                     type(v.vals[1].vals[0]) == str == type(v.vals[1].vals[1]) and \
                     eval("*".join(v.vals[1].vals)+"/pi")%2 == 0:  # x + 2kpi
                 idx = 1
                 if v == node("+", "_", node("*", "pi", "_")) and v.vals[1].vals[0] == "pi":
                     idx = 0
-                return node(graph.op, v.vals[idx])  # sin/cos/tan/cot(x + 2kpi) = sin/cos/tan/cot(x)
+                return node(graph.op, TR3(v.vals[idx]))  # sin/cos/tan/cot(x + 2kpi) = sin/cos/tan/cot(x)
                 
     return node(graph.op, *[TR3(i) for i in graph.vals])
 
@@ -174,8 +182,13 @@ def TR10(graph):
     return graph
 def TR11(graph):
     return graph
-def TR12(graph):
+
+def TR12(graph):  # remember to use negative to infix and call on self after running
+
+
+
     return graph
+
 def TR13(graph):
     return graph
 def CTR1(graph):
