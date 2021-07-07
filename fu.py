@@ -203,7 +203,7 @@ def TR10(graph):
 def TR11(graph):
     return graph
 
-def TR12(graph):  # tan sum formula
+def TR12(graph):  # tan sum formula (TODO: handle tan(x) + (tan(y) + sin(y)) )
 
     if type(graph) == str:
         return graph
@@ -224,7 +224,23 @@ def TR12(graph):  # tan sum formula
     return node(graph.op, *[TR12(i) for i in graph.vals])
 
 def TR13(graph):
+
+    if type(graph) == str:
+        return graph
+
+    graph = node(graph.op, *[TR13(i) for i in graph.vals])  # bottom up (TODO: handle tan(a) * (tan(b) / tan(c)) )
+
+    if graph == node("*", node("tan", "_"), node("tan", "_")):
+        a, b = graph.vals[0].vals[0], graph.vals[1].vals[0]
+        denom = node("tan", node("+", a, b))
+        return node("-", "1", node("+", node("/", node("tan", a), denom), node("/", node("tan", b), denom)))
+    if graph == node("*", node("cot", "_"), node("cot", "_")):  # can this ever happen ??
+        a, b = graph.vals[0].vals[0], graph.vals[1].vals[0]
+        denom = node("tan", node("+", a, b))
+        return node("+", "1", node("+", node("/", node("cot", a), denom), node("/", node("cot", b), denom)))
+
     return graph
+
 def CTR1(graph):
     return graph
 def CTR2(graph):

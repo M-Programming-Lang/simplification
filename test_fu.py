@@ -4,6 +4,8 @@ import unittest
 
 class TestFu(unittest.TestCase):
 
+      test_expr = node("-", terms[0], node("+", terms[1], node("+", terms[2], terms[3])))  # 1 - sin^2(2x)/4 - sin^2(y) - cos^4(x)
+
       def test_eq(self):
             self.assertEqual(node("sin", "x"), node("sin", "x"))
             self.assertEqual(node("sin", "x"), node("sin", "_"))
@@ -17,7 +19,7 @@ class TestFu(unittest.TestCase):
             self.assertNotEqual("3", node("cos", "x"))
 
       def test_count_trig_ops(self):
-            self.assertEqual(3, count_trig_ops(test))
+            self.assertEqual(3, count_trig_ops(self.test_expr))
             self.assertEqual(0, count_trig_ops(""))
 
       def test_check_operator(self):
@@ -29,6 +31,10 @@ class TestFu(unittest.TestCase):
       def test_negative_to_infix(self):
             self.assertEqual(negative_to_infix(node("sin", "x")), node("sin", "x"))
             self.assertEqual(negative_to_infix(node("sin", node("+", "x", node("-", "y")))), node("sin", node("-", "x", "y")))
+
+      def test_double_neg(self):
+            self.assertEqual(double_neg(node("sin", node("-", node("-", "x")))), node("sin", "x"))
+            self.assertEqual(double_neg(node("-", "x", node("-", "y"))), node("+", "x", "y"))
 
       def test_TR1(self):
             self.assertEqual(TR1(node("sec", "x")), node("/", "1", node("cos", "x")))
@@ -58,15 +64,15 @@ class TestFu(unittest.TestCase):
                         node("tan", "z"))))), node("-", "1", node("*", node("tan", "x"), node("/", node("+", node("tan", "y"),
                         node("tan", "z")), node("-", "1", node("*", node("tan", "y"), node("tan", "z"))))))))  # apply twice for tan(x+y+z)
 
+      def test_TR13(self):
+            self.assertEqual(TR13(node("*", node("tan", "x"), node("tan", "y"))), node("-", "1", node("+", node("/", node("tan", "x"), node("tan", node("+", "x", "y")), node("/", node("tan", "y"), node("tan", node("+", "x", "y")))))
+            self.assertEqual(TR13(node("sin", node("*", node("cot", "x"), node("cot", "y")))), node("sin", node("+", "1", node("+", node("/", node("cot", "x"), node("tan", node("+", "x", "y")), node("/", node("cot", "y"), node("tan", node("+", "x", "y"))))))
+
       def test_get_rpn(self):
-            self.assertEqual(get_rpn(test), "1 2 x * sin 2 ^ 4 / y sin 2 ^ x cos 4 ^ + + -")
+            self.assertEqual(get_rpn(self.test_expr), "1 2 x * sin 2 ^ 4 / y sin 2 ^ x cos 4 ^ + + -")
 
       def test_get_infix(self):
-            self.assertEqual(get_infix(test, True), "(1) - ((((sin((2) * (x))) ^ (2)) / (4)) + (((sin(y)) ^ (2)) + ((cos(x)) ^ (4))))")
-            
-      def test_double_neg(self):
-            self.assertEqual(double_neg(node("sin", node("-", node("-", "x")))), node("sin", "x"))
-            self.assertEqual(double_neg(node("-", "x", node("-", "y"))), node("+", "x", "y"))
+            self.assertEqual(get_infix(self.test_expr, True), "(1) - ((((sin((2) * (x))) ^ (2)) / (4)) + (((sin(y)) ^ (2)) + ((cos(x)) ^ (4))))")
       
 
 if __name__ == "__main__":
