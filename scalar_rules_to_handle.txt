@@ -112,3 +112,4 @@ sign evaluated where poss: sign(x^2+1) -> 1
 element evaluated where poss: a AND b E {true, false} -> true
 max(a*f(x)) -> a*max(f(x))
 add hyperbolic simplification like trig + matching with exponential form
+modular rules such as x**2 + 1 = (x + 1)**2 (mod 2)

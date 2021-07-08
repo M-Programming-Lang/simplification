@@ -87,8 +87,40 @@ def double_neg(graph):
         return double_neg(node("+", graph.vals[0], graph.vals[1].vals[0]))
     return node(graph.op, *[double_neg(i) for i in graph.vals])
 
+def eval_literal(graph):
+    '''
+    simplify expressions by evaluating literal function calls bottom up:
+     - 2+3 -> 5
+     - 4*5 -> 20
+     - 2^(2x) -> 4^x
+     - 1*x -> x
+     - 0+x -> x
+     - 0*x -> 0
+    '''
+
 def TR0(graph):
-    # remember to convert prefix - to infix - and 0 - x to -x
+
+    '''
+     1. convert to prime factors
+     2. convert a/b -> ab^-1
+     3. bring down exponents: (a^b)^c -> a^(bc)
+     4. split power bases: (ab)^c -> a^c*b^c
+     5. convert - to multiplication: a - b -> a + -b -> a + -1*b
+     6. expand multiplication (top down): (a+b)^n*(c+d) -> ca^n + nca^(n-1)b + ... + cb^n + da^n + nda^(n-1)b + ... + db^n
+     7. eval_literal
+     8. force powers on sum or product level terms: a * a^n -> a^1 * a^n
+     9. collect exponents: a^b * a^c -> a^(a + c)
+     10. eval_literal
+     11. factorise and rationalise denominator (bottom up): x^2 + 3*y^-0.5x -> xy^-1*(x*y + 3y^0.5)
+     12. force powers on sum or product level terms: a * a^n -> a^1 * a^n
+     13. collect exponents: a^b * a^c -> a^(a + c)
+     14. collect bases: a^n*b^n -> (ab)^n
+     15. eval_literal
+     16. convert x^1 -> x
+     17. replace - and /: ab^-1 -> a/b, a + b*-1 -> a - b, b^-1 -> -b
+     18. collect denominators (bottom up): 1/x + 1/y -> (x+y)/(xy)
+    '''
+
     return graph
 
 def TR1(graph):  # replace sec and cosec
