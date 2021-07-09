@@ -87,6 +87,22 @@ def double_neg(graph):
         return double_neg(node("+", graph.vals[0], graph.vals[1].vals[0]))
     return node(graph.op, *[double_neg(i) for i in graph.vals])
 
+def associative_cases(operation):  # function wrapper to call function on graphs that nest nodes in different ways to get same outputs
+    '''
+    examples:
+     - graph -> list of graphs to call wrapped function on
+     - (1 + 2) + 3 -> ((1 + 2) + 3, 1 + (2 + 3), (1 + 3) + 2)
+     - 5 * (2 / 3) -> (5 * (2 / 3), (5 * 2) / 3, (5 / 3) * 2)
+     - (1 + 2) + 5 * (2 / 3) -> (1 + 2) + 5 * (2 / 3), 1 + (2 +
+            5 * (2 / 3)), (1 + 5 * (2 / 3)) + 2, (1 + 2) + (5 *
+            2) / 3, 1 + (2 + (5 * 2) / 3), (1 + (5 * 2) / 3) +
+            2, (1 + 2) + (5 / 3) * 2, 1 + (2 + (5 / 3) * 2), (1
+            + (5 / 3) * 2) + 2
+    only makes list based around operation given if not None
+    returns graph with the least nodes
+    '''
+    return new_function
+
 def eval_literal(graph):
     '''
     simplify expressions by evaluating literal function calls bottom up:
@@ -235,7 +251,8 @@ def TR10(graph):
 def TR11(graph):
     return graph
 
-def TR12(graph):  # tan sum formula (TODO: handle tan(x) + (tan(y) + sin(y)) )
+@associative_cases("+")  # handle tan(x) + (tan(y) + sin(y))
+def TR12(graph):  # tan sum formula
 
     if type(graph) == str:
         return graph
@@ -255,12 +272,13 @@ def TR12(graph):  # tan sum formula (TODO: handle tan(x) + (tan(y) + sin(y)) )
 
     return node(graph.op, *[TR12(i) for i in graph.vals])
 
+@associative_cases(["*", "/"])  # handle tan(a) * (tan(b) / tan(c))
 def TR13(graph):
 
     if type(graph) == str:
         return graph
 
-    graph = node(graph.op, *[TR13(i) for i in graph.vals])  # bottom up (TODO: handle tan(a) * (tan(b) / tan(c)) )
+    graph = node(graph.op, *[TR13(i) for i in graph.vals])  # bottom up
 
     if graph == node("*", node("tan", "_"), node("tan", "_")):
         a, b = graph.vals[0].vals[0], graph.vals[1].vals[0]
