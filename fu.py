@@ -117,6 +117,7 @@ def eval_literal(graph):
 def TR0(graph):
 
     '''
+     0. check is computable (e.g. not division by 0)
      1. convert to prime factors
      2. convert a/b -> ab^-1
      3. bring down exponents: (a^b)^c -> a^(bc)
