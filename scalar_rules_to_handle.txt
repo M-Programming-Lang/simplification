@@ -113,3 +113,4 @@ element evaluated where poss: a AND b E {true, false} -> true
 max(a*f(x)) -> a*max(f(x))
 add hyperbolic simplification like trig + matching with exponential form
 modular rules such as x**2 + 1 = (x + 1)**2 (mod 2)
+rules that apply to a function for a specific codomain e.g. f(x) = max(x, 0): (0, inf) -> |R  =>  f(x) = x: (0, inf) -> |R
