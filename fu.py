@@ -4,11 +4,14 @@
 # leaves: "1", "2", "3", ..., "pi", "x", "y", "z"
 
 # see:
+# -- getting associvity working first --
 # 0. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L1650
 # 1. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L1555
 # 2. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L31
 
+from simplify_polynomial import *
 from math import pi
+from itertools import permutations
 
 class node:
     def __init__(self, op, *vals):
@@ -56,10 +59,15 @@ def fu(graph):
 
     return graph
 
-def count_trig_ops(graph):  # count trig operations in graph
+def count_trig_ops(graph):
     if type(graph) == str:
         return 0
     return (graph.op not in ["+", "-", "*", "/", "^"]) + sum(count_trig_ops(i) for i in graph.vals)
+
+def count_ops(graph):
+    if type(graph) == str:
+        return 0
+    return 1 + sum(count_trig_ops(i) for i in graph.vals)
 
 def check_operator(graph, op):  # check if an operator is present in the graph
     if type(graph) == str:
@@ -68,26 +76,34 @@ def check_operator(graph, op):  # check if an operator is present in the graph
         return True
     return any(check_operator(i, op) for i in graph.vals)
 
+def return_strings(func):  # wrapper to return graph if graph is string
+
+    def function(graph, *args):
+        if type(graph) == str:
+            return graph
+        return func(graph, *args)
+
+    return function
+
+@return_strings
 def negative_to_infix(graph):  # convert a + (-b) to a - b
-    if type(graph) == str:
-        return graph
-    if graph in [node("+", "_", node("-", "_")), node("+", node("-", "_"), "_")]:
+    if graph in [node("+", "_", node("-", "_")), node("+", node("-", "_"), "_")]:  # TODO: why error here?
         idx = 0
         if type(graph.vals[0]) != str and graph.vals[0].op == "-" and len(graph.vals[0].vals) == 1:
             idx = 1
         return node("-", negative_to_infix(graph.vals[idx]), negative_to_infix(graph.vals[abs(idx-1)].vals[0]))
     return node(graph.op, *[negative_to_infix(i) for i in graph.vals])
 
+@return_strings
 def double_neg(graph):
-    if type(graph) == str:
-        return graph
     if graph == node("-", node("-", "_")):
         return double_neg(graph.vals[0].vals[0])
     if graph == node("-", "_", node("-", "_")):
         return double_neg(node("+", graph.vals[0], graph.vals[1].vals[0]))
     return node(graph.op, *[double_neg(i) for i in graph.vals])
 
-def associative_cases(operation):  # function wrapper to call function on graphs that nest nodes in different ways to get same outputs
+# TODO: make this work
+def associative_cases(operations):  # function wrapper to call function on graphs that nest nodes in different ways to get same outputs
     '''
     examples:
      - graph -> list of graphs to call wrapped function on
@@ -98,102 +114,87 @@ def associative_cases(operation):  # function wrapper to call function on graphs
             2) / 3, 1 + (2 + (5 * 2) / 3), (1 + (5 * 2) / 3) +
             2, (1 + 2) + (5 / 3) * 2, 1 + (2 + (5 / 3) * 2), (1
             + (5 / 3) * 2) + 2
-    only makes list based around operation given if not None
+    only makes list based around operation given & assumes all operations given to be same precedence
     returns graph with the least nodes
     '''
-    return new_function
 
-def eval_literal(graph, factors=False):  # unfinished
-    '''
-    simplify expressions by evaluating literal function calls bottom up:
-     - 2+3 -> 5
-     - 4*5 -> 20
-     - 2^(2x) -> 4^x
-     - 1*x -> x
-     - 0+x -> x
-     - 0*x -> 0
-     - x^0 -> 1
-     - 2^-2 -> 4^-1
-    if primes convert all integers to prime factors again at end
-    '''
+    def get_graphs(graph, operators):
 
-    if type(graph) == str:
-        return graph
+        if type(graph) == str:
+            return [graph]
 
-    graph = node(graph.op, *[eval_literal(i) for i in graph.vals])  # evaluate bottom up to handle cases such as 2*3 + 4
+        if graph.op not in operators:
+            return [node(graph.op, *[get_graphs(i, operators) for i in graph.vals])]
 
-def simplify_exponent(graph):
-    '''
-    simplify cases:
-     bring down exponents: (a^b)^c -> a^(bc)
-     split power bases: (ab)^c -> a^c*b^c
-    repeat calling in order until second case is no longer triggered
-    '''
+        def get_operands(graph, op):
+
+            if type(graph) == str or graph.op not in op:
+                return [graph]
+
+            if graph.op == "/":
+                return [i for i in get_operands(graph.vals[0])] + [node("/", graph.vals[1])]
+
+            return [j for i in graph.vals for j in get_operands(i, op)]  # ?
+
+        def get_all_binary_trees(op, leaves):
+            if len(leaves) == 1:
+                return leaves[0]
+                
+            trees = []
+
+            for index in range(0, len(leaves)-1):
+                left_list, right_list = leaves[:index+1], leaves[index+1:]
+                for left_tree in get_all_binary_trees(op, left_list):
+                    for right_tree in get_all_binary_trees(op, right_list):
+                        trees.append(node("*", left_tree, right_tree))
+
+        operands = get_operands(graph, operators)
+        operands = list(permutations(operands, len(operands)))
+        graphs = get_all_binary_trees(operators[0], operands)  # TODO: this produces extra trees that have invertedversions already in the list
+                                                               # e.g. list contains both node("*", "x", "y") and node("*", "y", "x")
+                                                               # should probably redo this code tbh
+
+        if "/" in operators:
+
+            @return_strings
+            def remove_prefix_divide(graph, first_call=False):
+
+                graph = node(graph.op, *[remove_prefix_divide(i) for i in graph.vals])
+
+                if graph.op == "*":
+                    
+                    if graph.vals[0] == node("/", "_"):
+                        if graph.vals[1] == node("/", "_"):
+                            return node("/", node(graph.vals[0].vals[0], graph.vals[1].vals[0]))
+                        return node("/", remove_prefix_divide(graph.vals[1]), remove_prefix_divide(graph.vals[0].vals[0]))
+
+                    if graph.vals[1] == node("/", "_"):
+                        return node("/", remove_prefix_divide(graph.vals[0]), remove_prefix_divide(graph.vals[1].vals[0]))
+
+                if first_call and graph.op == "/":
+                    graph.vals = ["1", graph.vals[0]]
+
+                return graph
+
+            graphs = [remove_prefix_divide(i, True) for i in graphs]  # TODO: "TypeError: 'NoneType' object is not iterable"
+
+        return graphs
+
+    def wrapper(simplification):
+
+        def new_function(graph):  # O(lots)
+
+            simplified_graphs = [simplification(graph) for graph in get_graphs(graph, operations)]
+            return min(simplified_graphs, key=count_ops)  # optimise by minimising total number of operations
+
+        return new_function
+    return wrapper
 
 def TR0(graph):
+    return simplify_polynomial(graph)
 
-    '''
-     0. check is computable (e.g. not division by 0)
-     1. convert to prime factors (inc separating prefix - if necessary)
-     2. convert a/b -> ab^-1
-     3. simplify_exponent
-     4. convert - to multiplication: a - b -> a + -b -> a + -1*b
-     5. eval literal (factors=True)
-     6. expand multiplication (top down): (a+b)^n*(c+d) -> ca^n + nca^(n-1)b + ... + cb^n + da^n + nda^(n-1)b + ... + db^n
-     7. simplify_exponent
-     8. eval_literal (factors=True)
-     9. force powers on sum or product level terms: a * a^n -> a^1 * a^n
-     10. collect exponents: a^b * a^c -> a^(a + c)
-     11. eval_literal (factors=True)
-     12. factorise and rationalise denominator (bottom up, eval after change w/factors=True): x^2 + 3*y^-0.5x -> xy^-1*(x*y + 3y^0.5)
-     13. force powers on sum or product level terms: a * a^n -> a^1 * a^n
-     14. collect exponents: a^b * a^c -> a^(a + c)
-     15. collect bases: a^n*b^n -> (ab)^n
-     16. eval_literal
-     17. replace - and /: ab^-1 -> a/b, a + b*-1 -> a - b, b^-1 -> -b
-     18. collect denominators (bottom up): 1/x + 1/y -> (x+y)/(xy)
-     19. eval_literal
-     20. make nice order (not necessary for python system but may be useful in rust)
-
-
-    example:
-     0. x * 1 * (x + 2 + 0) ^ 2 * 3 + 4 * x - (((x / 3) ^ 2) ^ 2) ^ 1
-     1. x * 1 * (x + 2 + 0) ^ 2 * 3 + 2 ^ 2 * x - (((x / 3) ^ 2) ^ 2) ^ 1
-     2. x * 1 * (x + 2 + 0) ^ 2 * 3 + 2 ^ 2 * x - (((x * 3 ^ - 1) ^ 2) ^ 2) ^ 1
-     3. x * 1 * (x + 2 + 0) ^ 2 * 3 + 2 ^ 2 * x - (x * 3 ^ - 1) ^ (2 * 2)
-        x * 1 * (x + 2 + 0) ^ 2 * 3 + 2 ^ 2 * x - x ^ (2 * 2) * (3 ^ - 1) ^ (2 * 2)
-        x * 1 * (x + 2 + 0) ^ 2 * 3 + 2 ^ 2 * x - x ^ (2 * 2) * 3 ^ (- 1 * 2 * 2)
-     4. x * 1 * (x + 2 + 0) ^ 2 * 3 + 2 ^ 2 * x + - 1 * x ^ (2 * 2) * 3 ^ (- 1 * 2 * 2)
-     5. x * (x + 2) ^ 2 * 3 + 2 ^ 2 * x + - 1 * x ^ (2 ^ 2) * 3 ^ (- 1 * 2 ^ 2)
-     6. x * (x ^ 2 + 2 * 2 * x + 2 ^ 2) * 3 + 2 ^ 2 * x + - 1 * x ^ 2 ^ 2 * 3 ^ (- 1 * 2 ^ 2)
-        3 * x * x ^ 2 + 3 * x * 2 * 2 * x + 3 * x * 2 ^ 2 + 2 ^ 2 * x + - 1 * x ^ 2 ^ 2 * 3 ^ (- 1 * 2 ^ 2)
-     7. 3 * x * x ^ 2 + 3 * x * 2 * 2 * x + 3 * x * 2 ^ 2 + 2 ^ 2 * x + - 1 * x ^ 2 ^ 2 * 3 ^ (- 1 * 2 ^ 2)
-     8. 3 * x * x ^ 2 + 3 * 2 ^ 2 * x * x + 3 * x * 2 ^ 2 + 2 ^ 2 * x + - 1 * x ^ 2 ^ 2 * 3 ^ (- 1 * 2 ^ 2)
-     9. 3 ^ 1 * x ^ 1 * x ^ 2 + 3 ^ 1 * 2 ^ 2 * x ^ 1 * x ^ 1 + 3 ^ 1 * x ^ 1 * 2 ^ 2 + 2 ^ 2 * x ^ 1 + (- 1)
-                        ^ 1 * x ^ 2 ^ 2 * 3 ^ ((- 1) ^ 1 * 2 ^ 2)
-     10. 3 ^ 1 * x ^ (1 + 2) + 3 ^ 1 * 2 ^ 2 * x ^ (1 + 1) + 3 ^ 1 * x ^ 1 * 2 ^ 2 + 2 ^ 2 * x ^ 1 + (- 1)
-                        ^ 1 * x ^ 2 ^ 2 * 3 ^ ((- 1) ^ 1 * 2 ^ 2)
-     11. 3 * x ^ 3 + 3 * 2 ^ 2 * x ^ 2 + 3 * 2 ^ 2 * x + 2 ^ 2 * x + - x ^ 2 ^ 2 * 3 ^ (- 1 * 2 ^ 2)
-     12. x * (3 * x ^ 2 + 3 * 2 ^ 2 * x ^ 1 + 3 * 2 ^ 2 * x ^ 0 + 2 ^ 2 * x ^ 0 + - x ^ (2 ^ 2 - 1) * 3 ^ (- 1 * 2 ^ 2))
-         x * (3 * x ^ 2 + 3 * 2 ^ 2 * x + 2 ^ 2 ^ 2 + - x ^ 3 * 3 ^ (- 1 * 2 ^ 2))
-     13. x * (3 ^ 1 * x ^ 2 + 3 ^ 1 * 2 ^ 2 * x ^ 1 + 2 ^ 2 ^ 2 + - x ^ 3 * 3 ^ ((- 1) ^ 1 * 2 ^ 2))
-     14. x * (3 ^ 1 * x ^ 2 + 3 ^ 1 * 2 ^ 2 * x ^ 1 + 2 ^ 2 ^ 2 + - x ^ 3 * 3 ^ ((- 1) ^ 1 * 2 ^ 2))
-     15. x * (3 ^ 1 * x ^ 2 + (3 * x) ^ 1 * 2 ^ 2 + 2 ^ 2 ^ 2 + - x ^ 3 * 3 ^ ((- 1) ^ 1 * 2 ^ 2))
-     16. x * (3 * x ^ 2 + 12 * x + 16 - x ^ 3 * 81 ^ - 1)
-     17. x * (3 * x ^ 2 + 12 * x + 16 - x ^ 3 / 81)
-     18. x / 81 * (81 * 3 * x ^ 2 + 81 * 12 * x + 81 * 16 - x ^ 3)
-     19. x / 81 * (243 * x ^ 2 + 972 * x + 1296 - x ^ 3)
-     20. x * (- x ^ 3 + 243 * x ^ 2 + 972 * x + 1296) / 81
-
-     so x * 1 * (x + 4 + 0) ^ 2 * 3 + 4 * x - (((x / 3) ^ 2) ^ 2) ^ 1 = x * (- x ^ 3 + 243 * x ^ 2 + 972 * x + 1296) / 81
-    '''
-
-    return graph
-
+@return_strings
 def TR1(graph):  # replace sec and cosec
-
-    if type(graph) == str:
-        return graph
 
     if graph.op == "csc":
         return node("/", "1", node("sin", TR1(graph.vals[0])))
@@ -205,10 +206,8 @@ def TR1(graph):  # replace sec and cosec
 def TR2(graph):
     return graph
 
+@return_strings
 def TR3(graph):  # e.g. sin(-x) -> -sin(x)
-
-    if type(graph) == str:
-        return graph
 
     graph = node(graph.op, *[TR3(i) for i in graph.vals])
     graph = double_neg(graph)
@@ -252,11 +251,8 @@ def TR3(graph):  # e.g. sin(-x) -> -sin(x)
 
     return graph
 
-
+@return_strings
 def TR4(graph):  # special angles
-
-    if type(graph) == str:
-        return graph
 
     graph = node(graph.op, *[TR4(i) for i in graph.vals])
 
@@ -302,11 +298,9 @@ def TR10(graph):
 def TR11(graph):
     return graph
 
-@associative_cases("+")  # handle tan(x) + (tan(y) + sin(y))
+@associative_cases(["+"])  # handle tan(x) + (tan(y) + sin(y))
+@return_strings
 def TR12(graph):  # tan sum formula
-
-    if type(graph) == str:
-        return graph
 
     graph = negative_to_infix(graph)
 
@@ -324,10 +318,8 @@ def TR12(graph):  # tan sum formula
     return node(graph.op, *[TR12(i) for i in graph.vals])
 
 @associative_cases(["*", "/"])  # handle tan(a) * (tan(b) / tan(c))
+@return_strings
 def TR13(graph):
-
-    if type(graph) == str:
-        return graph
 
     graph = node(graph.op, *[TR13(i) for i in graph.vals])  # bottom up
 
@@ -359,23 +351,19 @@ def RL1(graph):
 def RL2(graph):
     return graph
 
+@return_strings
 def get_rpn(graph):  # for printing the graph in reverse polish notation
-    if type(graph) == str:
-        return graph
-    else:
-        return " ".join([get_rpn(i) for i in graph.vals]) + " " + graph.op
+    return " ".join([get_rpn(i) for i in graph.vals]) + " " + graph.op
 
+@return_strings
 def get_infix(graph, parens=False):  # for printing the graph with normal notation
-    if type(graph) == str:
-        return graph
-    else:
-        if len(graph.vals) == 1:
-            if graph.op == "-":
-                return "-" + get_infix(graph.vals[0], parens)
-            return graph.op + "(" + get_infix(graph.vals[0], parens) + ")"
-        if parens:
-            return "(" + get_infix(graph.vals[0], True) + ") " + graph.op + " (" + get_infix(graph.vals[1], True) + ")"
-        return get_infix(graph.vals[0]) + " " + graph.op + " " + get_infix(graph.vals[1])
+    if len(graph.vals) == 1:
+        if graph.op == "-":
+            return "-" + get_infix(graph.vals[0], parens)
+        return graph.op + "(" + get_infix(graph.vals[0], parens) + ")"
+    if parens:
+        return "(" + get_infix(graph.vals[0], True) + ") " + graph.op + " (" + get_infix(graph.vals[1], True) + ")"
+    return get_infix(graph.vals[0]) + " " + graph.op + " " + get_infix(graph.vals[1])
 
 
 if __name__ == "__main__":

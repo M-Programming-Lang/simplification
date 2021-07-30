@@ -74,6 +74,8 @@ class TestFu(unittest.TestCase):
       def test_get_infix(self):
             self.assertEqual(get_infix(self.test_expr, True), "(1) - ((((sin((2) * (x))) ^ (2)) / (4)) + (((sin(y)) ^ (2)) + ((cos(x)) ^ (4))))")
       
+      def test_associative_cases(self):
+            pass  # TODO
 
 if __name__ == "__main__":
       unittest.main()
