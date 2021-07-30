@@ -4,7 +4,7 @@
 # leaves: "1", "2", "3", ..., "pi", "x", "y", "z"
 
 # see:
-# -- getting associvity working first --
+# -- getting associativity working first --
 # 0. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L1650
 # 1. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L1555
 # 2. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L31
