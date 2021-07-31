@@ -4,14 +4,13 @@
 # leaves: "1", "2", "3", ..., "pi", "x", "y", "z"
 
 # see:
-# -- getting associativity working first --
 # 0. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L1650
 # 1. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L1555
 # 2. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L31
 
 from simplify_polynomial import *
 from math import pi
-from itertools import permutations
+from itertools import combinations, chain
 
 class node:
     def __init__(self, op, *vals):
@@ -27,7 +26,8 @@ class node:
         return graph.op == self.op and all(["_" in [str(a), str(b)] or a == b for a, b in zip(self.vals, graph.vals)])
 
     def __repr__(self):
-        return get_infix(self)
+        return f"node({self.op}, {', '.join([str(i) for i in self.vals])})"
+        #return get_infix(self)
 
 terms = [
     "1",  # 1
@@ -77,17 +77,15 @@ def check_operator(graph, op):  # check if an operator is present in the graph
     return any(check_operator(i, op) for i in graph.vals)
 
 def return_strings(func):  # wrapper to return graph if graph is string
-
     def function(graph, *args):
         if type(graph) == str:
             return graph
         return func(graph, *args)
-
     return function
 
 @return_strings
 def negative_to_infix(graph):  # convert a + (-b) to a - b
-    if graph in [node("+", "_", node("-", "_")), node("+", node("-", "_"), "_")]:  # TODO: why error here?
+    if graph in [node("+", "_", node("-", "_")), node("+", node("-", "_"), "_")]:
         idx = 0
         if type(graph.vals[0]) != str and graph.vals[0].op == "-" and len(graph.vals[0].vals) == 1:
             idx = 1
@@ -102,7 +100,6 @@ def double_neg(graph):
         return double_neg(node("+", graph.vals[0], graph.vals[1].vals[0]))
     return node(graph.op, *[double_neg(i) for i in graph.vals])
 
-# TODO: make this work
 def associative_cases(operations):  # function wrapper to call function on graphs that nest nodes in different ways to get same outputs
     '''
     examples:
@@ -119,12 +116,21 @@ def associative_cases(operations):  # function wrapper to call function on graph
     '''
 
     def get_graphs(graph, operators):
-
+        
         if type(graph) == str:
             return [graph]
 
         if graph.op not in operators:
-            return [node(graph.op, *[get_graphs(i, operators) for i in graph.vals])]
+
+            vals = [[]]
+            for i in graph.vals:
+                graphs = get_graphs(i, operators)
+                new_vals = []
+                for val in vals:
+                    new_vals += [val + [g] for g in graphs]
+                vals = new_vals
+
+            return [node(graph.op, *v) for v in vals]
 
         def get_operands(graph, op):
 
@@ -132,27 +138,33 @@ def associative_cases(operations):  # function wrapper to call function on graph
                 return [graph]
 
             if graph.op == "/":
-                return [i for i in get_operands(graph.vals[0])] + [node("/", graph.vals[1])]
+                return [i for i in get_operands(graph.vals[0], op)] + [node("/", graph.vals[1])]
 
             return [j for i in graph.vals for j in get_operands(i, op)]  # ?
 
         def get_all_binary_trees(op, leaves):
+            
             if len(leaves) == 1:
-                return leaves[0]
-                
-            trees = []
+                return leaves
 
-            for index in range(0, len(leaves)-1):
-                left_list, right_list = leaves[:index+1], leaves[index+1:]
-                for left_tree in get_all_binary_trees(op, left_list):
-                    for right_tree in get_all_binary_trees(op, right_list):
-                        trees.append(node("*", left_tree, right_tree))
+
+            lefts, splits = [], []  # splits is list of ways to split leaves into 2 non-empty sets
+            for length in range(1, len(leaves)):
+                lefts += list(combinations(leaves, length))
+
+            for left in lefts[:int(len(lefts)/2)]:  # only take first half so dont get both [(a, b), (c, d)] and [(c, d), (a, b)]
+                splits.append([left, tuple([elem for elem in leaves if elem not in left])])
+
+            trees = []
+            for left_set, right_set in splits:
+                for left in get_all_binary_trees(op, left_set):
+                    for right in get_all_binary_trees(op, right_set):
+                        trees.append(node(op, left, right))
+
+            return trees
 
         operands = get_operands(graph, operators)
-        operands = list(permutations(operands, len(operands)))
-        graphs = get_all_binary_trees(operators[0], operands)  # TODO: this produces extra trees that have invertedversions already in the list
-                                                               # e.g. list contains both node("*", "x", "y") and node("*", "y", "x")
-                                                               # should probably redo this code tbh
+        graphs = get_all_binary_trees(operators[0], operands)
 
         if "/" in operators:
 
@@ -176,7 +188,7 @@ def associative_cases(operations):  # function wrapper to call function on graph
 
                 return graph
 
-            graphs = [remove_prefix_divide(i, True) for i in graphs]  # TODO: "TypeError: 'NoneType' object is not iterable"
+            graphs = [remove_prefix_divide(i, True) for i in graphs]
 
         return graphs
 
@@ -184,8 +196,15 @@ def associative_cases(operations):  # function wrapper to call function on graph
 
         def new_function(graph):  # O(lots)
 
-            simplified_graphs = [simplification(graph) for graph in get_graphs(graph, operations)]
-            return min(simplified_graphs, key=count_ops)  # optimise by minimising total number of operations
+            original_graphs = get_graphs(graph, operations)
+            simplified_graphs = [simplification(graph) for graph in original_graphs]
+            changed = [s for o, s in zip(original_graphs, simplified_graphs) if o != s]
+            if not changed:
+                return graph
+            return min(changed, key=count_ops)  # minimise number of operations if multiple graphs are changed
+                                                # TODO: could first pick graph that has had the operation performed
+                                                # the most times so operations that make the graph larger (e.g. 
+                                                # TR13) are applied as many times as poss when called
 
         return new_function
     return wrapper
@@ -298,7 +317,6 @@ def TR10(graph):
 def TR11(graph):
     return graph
 
-@associative_cases(["+"])  # handle tan(x) + (tan(y) + sin(y))
 @return_strings
 def TR12(graph):  # tan sum formula
 
@@ -318,21 +336,25 @@ def TR12(graph):  # tan sum formula
     return node(graph.op, *[TR12(i) for i in graph.vals])
 
 @associative_cases(["*", "/"])  # handle tan(a) * (tan(b) / tan(c))
-@return_strings
 def TR13(graph):
 
-    graph = node(graph.op, *[TR13(i) for i in graph.vals])  # bottom up
+    @return_strings
+    def recursive_TR13(graph):
 
-    if graph == node("*", node("tan", "_"), node("tan", "_")):
-        a, b = graph.vals[0].vals[0], graph.vals[1].vals[0]
-        denom = node("tan", node("+", a, b))
-        return node("-", "1", node("+", node("/", node("tan", a), denom), node("/", node("tan", b), denom)))
-    if graph == node("*", node("cot", "_"), node("cot", "_")):  # can this ever happen ??
-        a, b = graph.vals[0].vals[0], graph.vals[1].vals[0]
-        denom = node("tan", node("+", a, b))
-        return node("+", "1", node("+", node("/", node("cot", a), denom), node("/", node("cot", b), denom)))
+        graph = node(graph.op, *[recursive_TR13(i) for i in graph.vals])  # bottom up
 
-    return graph
+        if graph == node("*", node("tan", "_"), node("tan", "_")):
+            a, b = graph.vals[0].vals[0], graph.vals[1].vals[0]
+            denom = node("tan", node("+", a, b))
+            return node("-", "1", node("+", node("/", node("tan", a), denom), node("/", node("tan", b), denom)))
+        if graph == node("*", node("cot", "_"), node("cot", "_")):  # can this ever happen ??
+            a, b = graph.vals[0].vals[0], graph.vals[1].vals[0]
+            denom = node("tan", node("+", a, b))
+            return node("+", "1", node("+", node("/", node("cot", a), denom), node("/", node("cot", b), denom)))
+
+        return graph
+
+    return recursive_TR13(graph)
 
 def CTR1(graph):
     return graph
@@ -367,6 +389,7 @@ def get_infix(graph, parens=False):  # for printing the graph with normal notati
 
 
 if __name__ == "__main__":
+    
     print(f"input (RPN):              {get_rpn(test)}")
     print(f"input (infix):            {get_infix(test, True)}")
     print(f"input (infix, no parens): {get_infix(test)}", end="\n\n")

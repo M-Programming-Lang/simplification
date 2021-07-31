@@ -65,17 +65,18 @@ class TestFu(unittest.TestCase):
                         node("tan", "z")), node("-", "1", node("*", node("tan", "y"), node("tan", "z"))))))))  # apply twice for tan(x+y+z)
 
       def test_TR13(self):
-            self.assertEqual(TR13(node("*", node("tan", "x"), node("tan", "y"))), node("-", "1", node("+", node("/", node("tan", "x"), node("tan", node("+", "x", "y"))), node("/", node("tan", "y"), node("tan", node("+", "x", "y"))))))
-            self.assertEqual(TR13(node("sin", node("*", node("cot", "x"), node("cot", "y")))), node("sin", node("+", "1", node("+", node("/", node("cot", "x"), node("tan", node("+", "x", "y"))), node("/", node("cot", "y"), node("tan", node("+", "x", "y")))))))
+            self.assertEqual(TR13(node("*", node("tan", "x"), node("tan", "y"))),
+                             node("-", "1", node("+", node("/", node("tan", "x"), node("tan", node("+", "x", "y"))), node("/", node("tan", "y"), node("tan", node("+", "x", "y"))))))
+            self.assertEqual(TR13(node("sin", node("*", node("cot", "x"), node("cot", "y")))),
+                             node("sin", node("+", "1", node("+", node("/", node("cot", "x"), node("tan", node("+", "x", "y"))), node("/", node("cot", "y"), node("tan", node("+", "x", "y")))))))
+            self.assertEqual(TR13(node("*", node("tan", "x"), node("/", node("tan", "y"), node("tan", "z")))),
+                             node("/", node("-", "1", node("+", node("/", node("tan", "x"), node("tan", node("+", "x", "y"))), node("/", node("tan", "y"), node("tan", node("+", "x", "y"))))), node("tan", "z")))
 
       def test_get_rpn(self):
             self.assertEqual(get_rpn(self.test_expr), "1 2 x * sin 2 ^ 4 / y sin 2 ^ x cos 4 ^ + + -")
 
       def test_get_infix(self):
             self.assertEqual(get_infix(self.test_expr, True), "(1) - ((((sin((2) * (x))) ^ (2)) / (4)) + (((sin(y)) ^ (2)) + ((cos(x)) ^ (4))))")
-      
-      def test_associative_cases(self):
-            pass  # TODO
 
 if __name__ == "__main__":
       unittest.main()
