@@ -46,7 +46,7 @@ def to_prime_factors(graph):
             return str(vals[0])
         return node("*", str(vals[0]), construct_subtree(vals[1:]))
     
-    if type(graph) == str and graph not in ["x", "y", "z"]:
+    if type(graph) == str and graph not in ["x", "y", "z", "pi"]:
         return construct_subtree(calculate_pfs(int(graph)))  # nasty multiplication will be cleaned up later
             
     if type(graph) != str:
