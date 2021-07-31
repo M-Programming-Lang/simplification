@@ -9,8 +9,8 @@
 # 2. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L31
 
 from simplify_polynomial import *
-from math import pi
 from itertools import combinations, chain
+from math import pi
 
 class node:
     def __init__(self, op, *vals):

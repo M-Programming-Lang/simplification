@@ -1,5 +1,6 @@
-from math import pi
+from math import prod
 from fu import *
+from simplify_polynomial import *
 import unittest
 
 class TestFu(unittest.TestCase):
@@ -35,6 +36,17 @@ class TestFu(unittest.TestCase):
       def test_double_neg(self):
             self.assertEqual(double_neg(node("sin", node("-", node("-", "x")))), node("sin", "x"))
             self.assertEqual(double_neg(node("-", "x", node("-", "y"))), node("+", "x", "y"))
+
+      def test_TR0(self):
+            for n in [123, 2465, 23, 4, 65, 78, 754, 23]:
+                  self.assertEqual(n, prod(calculate_pfs(n)))
+            self.assertEqual([3, 41], calculate_pfs(123))
+
+            self.assertFalse(is_computable(node("+", "1", node("/", node("^", "x" "2"), "0"))))
+            self.assertEqual(to_prime_factors(node("+", "5", node("/", node("^", "x", "12"), "1"))),
+                                              node("+", "5", node("/", node("^", "x", node("*", "2", node("*", "2", "3"))), "1")))
+            self.assertEqual(remove_division(node("+", "1", node("/", node("^", "x" "2"), "x"))),
+                                              node("+", "1", node("*", node("^", "x" "2"), node("^", "x", node("-", "1")))))
 
       def test_TR1(self):
             self.assertEqual(TR1(node("sec", "x")), node("/", "1", node("cos", "x")))

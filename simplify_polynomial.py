@@ -1,4 +1,69 @@
-def eval_literal(graph, factors=False):  # unfinished
+def return_strings(func):  # is it possible to import this from fu.py?
+    def function(graph, *args):
+        if type(graph) == str:
+            return graph
+        return func(graph, *args)
+    return function
+
+class node:  # or this?
+    def __init__(self, op, *vals):
+        self.op, self.vals = op, vals
+    def __eq__(self, graph):
+        if type(graph) == str:
+            if graph == "_":
+                return True
+            return False
+        if len(graph.vals) != len(self.vals):
+            return False
+        return graph.op == self.op and all(["_" in [str(a), str(b)] or a == b for a, b in zip(self.vals, graph.vals)])
+    def __repr__(self):
+        return f"node({self.op}, {', '.join([str(i) for i in self.vals])})"
+
+def is_computable(graph):  # only supports explicit x/0, not 1/(1*0) for example
+    if type(graph) == str:
+        return True
+    if graph == node("/", "_", "0"):
+        return False
+    return all([is_computable(i) for i in graph.vals])
+
+def calculate_pfs(value):
+    if value == 1: return [value]
+    factor, factors = 2, []
+    while factor ** 2 <= value:
+        if value % factor != 0:
+            factor += 1
+        else:
+            value /= factor
+            factors.append(factor)
+    if value > 1:
+        factors.append(int(value))
+    return factors
+
+def to_prime_factors(graph):
+
+    def construct_subtree(vals):
+        if len(vals) == 1:
+            return str(vals[0])
+        return node("*", str(vals[0]), construct_subtree(vals[1:]))
+    
+    if type(graph) == str and graph not in ["x", "y", "z"]:
+        return construct_subtree(calculate_pfs(int(graph)))  # nasty multiplication will be cleaned up later
+            
+    if type(graph) != str:
+        return node(graph.op, *[to_prime_factors(i) for i in graph.vals])
+
+    return graph
+
+@return_strings
+def remove_division(graph):
+    graph = node(graph.op,*[remove_division(i) for i in graph.vals])
+
+    if graph == node("/", "_", "_"):
+        graph = node("*", graph.vals[0], node("^", graph.vals[1], node("-", "1")))
+    return graph
+
+
+def eval_literal(graph, factors=False):
     '''
     simplify expressions by evaluating literal function calls bottom up:
      - 2+3 -> 5
@@ -82,5 +147,12 @@ def simplify_polynomial(graph):
 
      so x * 1 * (x + 4 + 0) ^ 2 * 3 + 4 * x - (((x / 3) ^ 2) ^ 2) ^ 1 = x * (- x ^ 3 + 243 * x ^ 2 + 972 * x + 1296) / 81
     '''
+
+    if not is_computable(graph):  # 0
+        return node("undefined")
+
+    graph = to_prime_factors(graph)  # 1
+    graph = remove_division(graph)  # 2
+
 
     return graph
