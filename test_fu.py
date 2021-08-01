@@ -48,6 +48,12 @@ class TestFu(unittest.TestCase):
             self.assertEqual(remove_division(node("+", "1", node("/", node("^", "x" "2"), "x"))),
                                               node("+", "1", node("*", node("^", "x" "2"), node("^", "x", node("-", "1")))))
 
+
+            # ((((x^y)*z)^x)^y)^z = x^(y*((x*y)*z))*z^((x*y)*z) ( = x^(y*x*y*z))*z^(x*y*z) )
+            self.assertEqual(simplify_exponent(node("^", node("^", node("^", node("*", node("^", "x", "y"), "z"), "x"), "y"), "z")),
+                                               node("*", node("^", "x", node("*", "y", node("*", node("*", "x", "y"), "z"))),
+                                                         node("^", "z", node("*", node("*", "x", "y"), "z"))))
+
       def test_TR1(self):
             self.assertEqual(TR1(node("sec", "x")), node("/", "1", node("cos", "x")))
             self.assertEqual(TR1(node("sin", node("csc", "x"))), node("sin", node("/", "1", node("sin", "x"))))

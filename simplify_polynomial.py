@@ -63,6 +63,52 @@ def remove_division(graph):
     return graph
 
 
+def simplify_exponent(graph):
+    '''
+    simplify cases:
+     bring down exponents: (a^b)^c -> a^(bc)
+     split power bases: (ab)^c -> a^c*b^c
+    repeat calling in order until second case is no longer triggered
+    '''
+
+    @return_strings
+    def unstack_exp(graph):
+
+        graph = node(graph.op, *[unstack_exp(i) for i in graph.vals])
+
+        if graph == node("^", node("^", "_", "_"), "_"):
+            graph = node("^", graph.vals[0].vals[0], node("*", graph.vals[0].vals[1], graph.vals[1]))
+
+        return graph
+
+    def split_exp_bases(graph):
+
+        if type(graph) == str:
+            return graph, False
+
+        changed = False
+
+        vals = []
+        for g in graph.vals:
+            v, c = split_exp_bases(g)
+            changed |= c
+            vals.append(v)
+
+        graph = node(graph.op, *vals)
+
+        if graph == node("^", node("*", "_", "_"), "_"):
+            graph = node("*", node("^", graph.vals[0].vals[0], graph.vals[1]), node("^", graph.vals[0].vals[1], graph.vals[1]))
+            changed = True
+
+        return graph, changed
+
+    changed = True
+    while changed:
+        graph = unstack_exp(graph)
+        graph, changed = split_exp_bases(graph)
+
+    return graph
+
 def eval_literal(graph, factors=False):
     '''
     simplify expressions by evaluating literal function calls bottom up:
@@ -81,14 +127,6 @@ def eval_literal(graph, factors=False):
         return graph
 
     graph = node(graph.op, *[eval_literal(i) for i in graph.vals])  # evaluate bottom up to handle cases such as 2*3 + 4
-
-def simplify_exponent(graph):
-    '''
-    simplify cases:
-     bring down exponents: (a^b)^c -> a^(bc)
-     split power bases: (ab)^c -> a^c*b^c
-    repeat calling in order until second case is no longer triggered
-    '''
 
 def simplify_polynomial(graph):
 
