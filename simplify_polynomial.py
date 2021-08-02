@@ -1,23 +1,4 @@
-def return_strings(func):  # is it possible to import this from fu.py?
-    def function(graph, *args):
-        if type(graph) == str:
-            return graph
-        return func(graph, *args)
-    return function
-
-class node:  # or this?
-    def __init__(self, op, *vals):
-        self.op, self.vals = op, vals
-    def __eq__(self, graph):
-        if type(graph) == str:
-            if graph == "_":
-                return True
-            return False
-        if len(graph.vals) != len(self.vals):
-            return False
-        return graph.op == self.op and all(["_" in [str(a), str(b)] or a == b for a, b in zip(self.vals, graph.vals)])
-    def __repr__(self):
-        return f"node({self.op}, {', '.join([str(i) for i in self.vals])})"
+from util import *
 
 def is_computable(graph):  # only supports explicit x/0, not 1/(1*0) for example
     if type(graph) == str:
@@ -109,35 +90,90 @@ def simplify_exponent(graph):
 
     return graph
 
-def eval_literal(graph, factors=False):
+@return_strings
+def remove_minus(graph):
+    graph = node(graph.op, *[remove_minus(i) for i in graph.vals])
+
+    if graph == node("-", "_"):
+        graph = node("*", "-1", graph.vals[0])
+    elif graph == node("-", "_", "_"):
+        graph = node("+", graph.vals[0], node("*", graph.vals[1], "-1"))
+
+    return graph
+
+@prefix_minus_to_value
+@associative_cases(["+", "*"])
+def eval_literal(graph, factors=False, minuses=False):
     '''
-    simplify expressions by evaluating literal function calls bottom up:
-     - 2+3 -> 5
-     - 4*5 -> 20
-     - 2^(2x) -> 4^x
-     - 1*x -> x
-     - 0+x -> x
-     - 0*x -> 0
-     - x^0 -> 1
-     - 2^-2 -> 4^-1
-    if primes convert all integers to prime factors again at end
+    simplify expressions by evaluating literal function calls bottom up (order *shouldn't* matter):
+     0. node("-", "1") -> "-1" (wrapper)
+     1. 2+3 -> 5
+     2. 4*5 -> 20
+     3. 2^(2x) -> 4^x
+     4. 1*x -> x
+     5. 0+x -> x
+     6. 0*x -> 0
+     7. x^0 -> 1
+     8. 0^x -> 0
+     9. x^1 -> x
+     10. 1^x -> 1
+    if factors convert all integers to prime factors again at end
+    if not minuses call remove_minus
     '''
 
-    if type(graph) == str:
-        return graph
+    def eval_literal_recursive(graph):
 
-    graph = node(graph.op, *[eval_literal(i) for i in graph.vals])  # evaluate bottom up to handle cases such as 2*3 + 4
+        if type(graph) == str:
+            return graph, 0
+
+        vals = [eval_literal_recursive(i) for i in graph.vals]
+        changes = sum([i[1] for i in vals])
+        vals = [i[0] for i in vals]
+        graph = node(graph.op, *vals)  # evaluate bottom up to handle cases such as 2*3 + 4
+
+        if graph == node("+", "_", "_") and all([type(i) == str and i not in ["x", "y", "z", "pi"] for i in graph.vals]):  # 1
+            graph = str(eval("+".join(graph.vals)))
+        elif graph == node("*", "_", "_") and all([type(i) == str and i not in ["x", "y", "z", "pi"] for i in graph.vals]):  # 2
+            graph = str(eval("*".join(graph.vals)))
+        elif graph == node("^", "_", "_") and all([type(i) == str and i not in ["x", "y", "z", "pi"] for i in graph.vals]):  # 3
+            graph = str(eval("^".join(graph.vals)))
+        elif graph == node("^", "_", node("*", "_", "_")) and all([type(i) == str and i not in ["x", "y", "z", "pi"] for i in [graph.vals[0], graph.vals[1].vals[0]]]):  # 3
+            graph = node("^", str(eval(graph.vals[0] + "^" + graph.vals[1].vals[0])), graph.vals[1].vals[1])
+        elif graph == node("^", "_", node("*", "_", "_")) and all([type(i) == str and i not in ["x", "y", "z", "pi"] for i in [graph.vals[0], graph.vals[1].vals[1]]]):  # 3
+            graph = node("^", str(eval(graph.vals[0] + "^" + graph.vals[1].vals[1])), graph.vals[1].vals[0])
+        elif graph in [node("*", "1", "_"), node("+", "0", "_")]:  # 4, 5
+            graph = graph.vals[1]
+        elif graph in [node("*", "_", "1"), node("+", "_", "0"), node("^", "_", "1")]:  # 4, 5, 9
+            graph = graph.vals[0]
+        elif graph == node("*", "0", "_") or graph == node("*", "_", "0") or graph == node("^", "0", "_"):  # 6, 8
+            graph = "0"
+        elif graph == node("^", "_", "0") or graph == node("^", "1", "_"):  # 7, 10
+            graph = "1"
+
+        else:  # add one to changes IFF a change is made
+            changes -= 1
+        changes += 1
+
+        return graph, changes
+
+    graph, changes = eval_literal_recursive(graph)
+
+    if not minuses:  # these are not counted to changes total
+        graph = remove_minus(graph)
+    if factors:
+        graph = to_prime_factors(graph)
+
+    return graph, changes
 
 def simplify_polynomial(graph):
 
     '''
      0. check is computable (e.g. not division by 0)
-     1. convert to prime factors (inc separating prefix - if necessary)
-     2. convert a/b -> ab^-1
-     3. simplify_exponent
-     4. convert - to multiplication: a - b -> a + -b -> a + -1*b
-     5. eval literal (factors=True)
-     6. expand multiplication (top down): (a+b)^n*(c+d) -> ca^n + nca^(n-1)b + ... + cb^n + da^n + nda^(n-1)b + ... + db^n
+     1. convert a/b -> ab^-1
+     2. simplify_exponent
+     4. eval_literal
+     5. expand multiplication (top down): (a+b)^n*(c+d) -> ca^n + nca^(n-1)b + ... + cb^n + da^n + nda^(n-1)b + ... + db^n
+     6. convert to prime factors (NOTE: -1 should be node("-", "1") not "-1" in input but can be internally stored as "-1")
      7. simplify_exponent
      8. eval_literal (factors=True)
      9. force powers on sum or product level terms: a * a^n -> a^1 * a^n
@@ -150,11 +186,11 @@ def simplify_polynomial(graph):
      16. eval_literal
      17. replace - and /: ab^-1 -> a/b, a + b*-1 -> a - b, b^-1 -> -b
      18. collect denominators (bottom up): 1/x + 1/y -> (x+y)/(xy)
-     19. eval_literal
+     19. eval_literal (minuses=True)
      20. make nice order (not necessary for python system but may be useful in rust)
 
 
-    example:
+    example (changed made after this but generally correct):
      0. x * 1 * (x + 2 + 0) ^ 2 * 3 + 4 * x - (((x / 3) ^ 2) ^ 2) ^ 1
      1. x * 1 * (x + 2 + 0) ^ 2 * 3 + 2 ^ 2 * x - (((x / 3) ^ 2) ^ 2) ^ 1
      2. x * 1 * (x + 2 + 0) ^ 2 * 3 + 2 ^ 2 * x - (((x * 3 ^ - 1) ^ 2) ^ 2) ^ 1
@@ -189,8 +225,9 @@ def simplify_polynomial(graph):
     if not is_computable(graph):  # 0
         return node("undefined")
 
-    graph = to_prime_factors(graph)  # 1
-    graph = remove_division(graph)  # 2
-
+    graph = remove_division(graph)  # 1
+    graph = simplify_exponent(graph)  # 2
+    graph = remove_prefix_minus(graph)  # 3
+    graph = eval_literal(graph)  # 4
 
     return graph
