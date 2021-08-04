@@ -104,6 +104,9 @@ def remove_minus(graph):
 @prefix_minus_to_value
 @associative_cases(["+", "*"])
 def eval_literal(graph, factors=False, minuses=False):
+
+    print(graph)
+
     '''
     simplify expressions by evaluating literal function calls bottom up (order *shouldn't* matter):
      0. node("-", "1") -> "-1" (wrapper)

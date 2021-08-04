@@ -41,9 +41,12 @@ def associative_cases(operations):  # function wrapper to call function on graph
     '''
 
     def get_graphs(graph, operators):
-        
+
         if type(graph) == str:
             return [graph]
+
+        if graph.op == "/" and len(graph.vals) == 1:
+            return [node("/", i) for i in get_graphs(graph.vals[0], operators)]
 
         if graph.op not in operators:
 
@@ -65,13 +68,12 @@ def associative_cases(operations):  # function wrapper to call function on graph
             if graph.op == "/":
                 return [i for i in get_operands(graph.vals[0], op)] + [node("/", graph.vals[1])]
 
-            return [j for i in graph.vals for j in get_operands(i, op)]  # ?
+            return [j for i in graph.vals for j in get_operands(i, op)]
 
         def get_all_binary_trees(op, leaves):
-            
+
             if len(leaves) == 1:
                 return leaves
-
 
             lefts, splits = [], []  # splits is list of ways to split leaves into 2 non-empty sets
             for length in range(1, len(leaves)):
@@ -89,7 +91,19 @@ def associative_cases(operations):  # function wrapper to call function on graph
             return trees
 
         operands = get_operands(graph, operators)
-        graphs = get_all_binary_trees(operators[0], operands)
+
+        vals = [[]]
+        for i in operands:
+            graphs = get_graphs(i, operators)
+            new_vals = []
+            for val in vals:
+                new_vals += [val + [g] for g in graphs]
+            vals = new_vals
+
+        graphs = []
+        for g in vals:
+            x = get_all_binary_trees(operators[0], g)
+            graphs += get_all_binary_trees(operators[0], g)
 
         if "/" in operators:
 
@@ -123,11 +137,10 @@ def associative_cases(operations):  # function wrapper to call function on graph
 
             if len(operations) > 1 and "+" in operations:
                 simplified_graphs, new_operations = [], [i for i in operations if i != "+"]
-                for new_graph in get_graphs(graph, ["+"]):  # TODO: error thrown because get_graphs(graph, ["+"]) returning only input. Also output still mathematically incorrect
+                for new_graph in get_graphs(graph, ["+"]):
                     simplified_graphs += [simplification(g) for g in get_graphs(new_graph, new_operations)]
-                    print(get_graphs(new_graph, new_operations))
             else:
-                simplified_graphs = [simplification(graph) for graph in get_graphs(graph, operations)]
+                simplified_graphs = [simplification(g) for g in get_graphs(graph, operations)]
             # simplified_graphs is a list of (graph, no. changes)
             return min(simplified_graphs, key=lambda x : (-x[1], count_ops(x[0])))[0]  # only return the graph
 
