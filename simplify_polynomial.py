@@ -108,9 +108,6 @@ depth = 0
 @associative_cases(["+", "*"])
 def eval_literal(graph, factors=False, minuses=False):
 
-    print("A")
-    print(graph, end="\n\n\n")
-
     '''
     simplify expressions by evaluating literal function calls bottom up (order *shouldn't* matter):
      0. node("-", "1") -> "-1" (wrapper)
@@ -130,14 +127,7 @@ def eval_literal(graph, factors=False, minuses=False):
 
     def eval_literal_recursive(graph):
 
-        global depth
-        depth += 1
-        print(depth*"|"+"in")
-        print(depth*"|", graph)
-
         if type(graph) == str:
-            print(depth*"|"+"out")
-            print(depth*"|", graph, end=f"\n{depth*'|'}\n")
             depth -= 1
             return graph, 0
 
@@ -168,10 +158,6 @@ def eval_literal(graph, factors=False, minuses=False):
         else:  # add one to changes IFF a change is made
             changes -= 1
         changes += 1
-
-        print(depth*"|"+"out")
-        print(depth*"|", graph, end=f"\n{depth*'|'}\n")
-        depth -= 1
 
         return graph, changes
 
