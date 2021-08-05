@@ -57,7 +57,17 @@ class TestFu(unittest.TestCase):
             self.assertEqual(remove_minus(node("-", node("-", "x", "y"))), node("*", "-1", node("+", "x", node("*", "y", "-1"))))
             self.assertEqual(eval_literal(node("*", node("+", node("^", "2", node("*", "2", node("-", node("+", node("*", node("^", "x",
                                           node("^", "0", "x")), node("^", "x", "1")), node("*", "2", "2")), "4"))), node("*", "0", "x")),
-                                          node("^", "1", "x"))), node("^", "4", "x"))  # (2^(2*((x^(0^x)*x^1+2*2)-4))+0*x)*1^x -> 4^x     
+                                          node("^", "1", "x"))), node("^", "4", "x"))  # (2^(2*((x^(0^x)*x^1+2*2)-4))+0*x)*1^x -> 4^x   
+
+            self.assertEqual(expand_multiplication(node("*", node("*", "x", node("+", "x", "2")), node("^", node("+", "x", "1"), "2"))),
+            node("+", node("+", node("*", node("*", "1", node("*", node("^", "x", "2"), node("^", "1", "0"))), node("*", "x", "x")),
+            node("+", node("*", node("*", "2", node("*", node("^", "x", "1"), node("^", "1", "1"))), node("*", "x", "x")),
+            node("*", node("^", "1", "2"), node("*", "x", "x")))),
+            node("+", node("*", node("*", "1", node("*", node("^", "x", "2"), node("^", "1", "0"))), node("*", "2", "x")),
+            node("+", node("*", node("*", "2", node("*", node("^", "x", "1"), node("^", "1", "1"))), node("*", "2", "x")),
+            node("*", node("^", "1", "2"), node("*", "2", "x"))))))
+            # (x*(x+2))*(x+1)^2 -> ((1*(x^2*1^0))*(x*x)+((2*(x^1*1^1))*(x*x)+(1^2)*(x*x)))+((1*(x^2*1^0))*(2*x)+
+            #                                                                   ((2*(x^1*1^1))*(2*x)+(1^2)*(2*x)))  
 
       def test_TR1(self):
             self.assertEqual(TR1(node("sec", "x")), node("/", "1", node("cos", "x")))

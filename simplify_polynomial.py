@@ -169,14 +169,46 @@ def eval_literal(graph, factors=False, minuses=False):
 
     return graph, changes
 
+@return_strings
 def expand_multiplication(graph):
     '''
-    x*(x+2)*(x+1)^2 -> (x*x+2*x)*(1*x^2*1^0+2*x^1*1^1+1*x^0*1^2)
-    -> x*x*1*x^2*1^0+x*x*2*x^1*1^1+x*x*1*x^0*1^2 + 2*x*1*x^2*1^0+2*x*2*x^1*1^1+2*x*1*x^0*1^2   (will be cleaned up later)
-    '''
-    # TODO expand powers (calculating multinomial coefficient without expansion) and then multiplication with inner addition bottom up
-    # also need to make test
+    (x*(x+2))*(x+1)^2 -> (x*x+2*x)*(1*(x^2*1^0)+(2*(x^1*1^1)+1^2)) -> (x*x)*(1*(x^2*1^0)+(2*(x^1*1^1)+1^2))+
+    (2*x)*(1*(x^2*1^0)+(2*(x^1*1^1)+1^2)) -> ((1*(x^2*1^0))*(x*x)+(2*(x^1*1^1)+1^2)*(x*x))+((1*(x^2*1^0))*(2*x)+(2*(x^1*1^1)+1^2)*(2*x))
+     -> ((1*(x^2*1^0))*(x*x)+((2*(x^1*1^1))*(x*x)+(1^2)*(x*x)))+((1*(x^2*1^0))*(2*x)+((2*(x^1*1^1))*(2*x)+(1^2)*(2*x)))
+    ( -> x^4 + 4x^3 + 5x^2 + 2x)
 
+    for (x_0 + x_1 + ... + x_k)^n
+    then instead of calculating the multinomial coeficient directly, use binonial as:
+    (x_0 + (x_1 + ... + x_k))^n -> sum^n_k=0(nCk * x_0^(n-k) * (x_1 + ... + x_k)*k)
+    and then calculate (x_1 + ... + x_k)*k again recursively
+    '''
+
+    factorial = lambda x : 1 if x == 0 else x * factorial(x-1)
+
+    graph = node(graph.op, *[expand_multiplication(i) for i in graph.vals])
+
+    # expand powers
+    if graph == node("^", node("+", "_", "_"), "_") and type(graph.vals[1]) == str and graph.vals[1] not in ["x", "y", "z", "pi"]:
+        n = eval(graph.vals[1])
+
+        new_graph = expand_multiplication(node("^", graph.vals[0].vals[1], graph.vals[1]))
+        for k in range(n-1, -1, -1):
+            coef = int(factorial(n) / (factorial(k) * factorial(n-k)))  # nCk
+            next_node = node("*", str(coef), node("*", expand_multiplication(node("^", graph.vals[0].vals[0], str(n-k))),
+                                                       expand_multiplication(node("^", graph.vals[0].vals[1], str(k)))))
+            new_graph = node("+", next_node, new_graph)
+
+        graph = new_graph
+
+    elif graph in [node("*", node("+", "_", "_"), "_"), node("*", "_", node("+", "_", "_"))]:
+        if graph.vals[0] == node("+", "_", "_"):
+            graph = node("+", expand_multiplication(node("*", graph.vals[0].vals[0], graph.vals[1])),
+                              expand_multiplication(node("*", graph.vals[0].vals[1], graph.vals[1])))
+        else:
+            graph = node("+", expand_multiplication(node("*", graph.vals[1].vals[0], graph.vals[0])),
+                              expand_multiplication(node("*", graph.vals[1].vals[1], graph.vals[0])))
+
+    return graph
 
 def simplify_polynomial(graph, factor=True):
 
