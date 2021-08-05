@@ -3,6 +3,8 @@
 # prefix "-" -> node("-", val); infix "-" -> node("-", plus_val, minus_val)
 # leaves: "1", "2", "3", ..., "pi", "x", "y", "z"
 
+# Add: https://en.wikipedia.org/wiki/Morrie%27s_law ?
+
 # see:
 # 0. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L1650
 # 1. https://github.com/sympy/sympy/blob/53017ff6aee002cf59620592c559f73d522503a0/sympy/simplify/fu.py#L1555
@@ -40,10 +42,14 @@ def fu(graph):
     if check_operator(graph, "sin") or check_operator(graph, "cos"):
         graph = RL2(graph)
 
+    graph = simplify_polynomial(graph)  # for factorisation at end
+                                        # (can probably make this faster by
+                                        # removing repeated functions from
+                                        # TR0 call above)
     return graph
 
 def TR0(graph):
-    return simplify_polynomial(graph)
+    return simplify_polynomial(graph, False)
 
 @return_strings
 def TR1(graph):  # replace sec and cosec

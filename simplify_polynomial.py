@@ -168,7 +168,7 @@ def eval_literal(graph, factors=False, minuses=False):
 
     return graph, changes
 
-def simplify_polynomial(graph):
+def simplify_polynomial(graph, factor=True):
 
     '''
      0. check is computable (e.g. not division by 0)
@@ -182,13 +182,13 @@ def simplify_polynomial(graph):
      9. force powers on sum or product level terms: a * a^n -> a^1 * a^n
      10. collect exponents: a^b * a^c -> a^(a + c)
      11. eval_literal (factors=True)
-     12. factorise and rationalise denominator (bottom up, eval after change w/factors=True): x^2 + 3*y^-0.5x -> xy^-1*(x*y + 3y^0.5)
+     12. factorise (if factor) and rationalise denominator (bottom up, eval after change w/factors=True): x^2 + 3*y^-0.5x -> xy^-1*(x*y + 3y^0.5)
      13. force powers on sum or product level terms: a * a^n -> a^1 * a^n
      14. collect exponents: a^b * a^c -> a^(a + c)
      15. collect bases: a^n*b^n -> (ab)^n
      16. eval_literal
      17. replace - and /: ab^-1 -> a/b, a + b*-1 -> a - b, b^-1 -> -b
-     18. collect denominators (bottom up): 1/x + 1/y -> (x+y)/(xy)
+     18. collect denominators (if factor) (bottom up): 1/x + 1/y -> (x+y)/(xy)
      19. eval_literal (minuses=True)
      20. make nice order (not necessary for python system but may be useful in rust)
 
