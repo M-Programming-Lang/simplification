@@ -72,6 +72,11 @@ def associative_cases(operations):  # function wrapper to call function on graph
 
         def get_all_binary_trees(op, leaves):
 
+            def list_diff(l1, l2):  # computes l1 - l2 but with [1, 2, 2] - [2] = [1, 2] (not [1])
+                for i in l2:
+                    l1.remove(i)
+                return l1
+
             if len(leaves) == 1:
                 return leaves
 
@@ -80,7 +85,7 @@ def associative_cases(operations):  # function wrapper to call function on graph
                 lefts += list(combinations(leaves, length))
 
             for left in lefts[:int(len(lefts)/2)]:  # only take first half so dont get both [(a, b), (c, d)] and [(c, d), (a, b)]
-                splits.append([left, tuple([elem for elem in leaves if elem not in left])])
+                splits.append([left, tuple(list_diff(leaves, left))])
 
             trees = []
             for left_set, right_set in splits:
