@@ -128,7 +128,6 @@ def eval_literal(graph, factors=False, minuses=False):
     def eval_literal_recursive(graph):
 
         if type(graph) == str:
-            depth -= 1
             return graph, 0
 
         vals = [eval_literal_recursive(i) for i in graph.vals]
