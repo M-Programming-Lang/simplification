@@ -43,9 +43,8 @@ def fu(graph):
         graph = RL2(graph)
 
     graph = simplify_polynomial(graph)  # for factorisation at end
-                                        # (can probably make this faster by
-                                        # removing repeated functions from
-                                        # TR0 call above)
+                                        # potentially contains redundant code but not always so using full functon
+
     return graph
 
 def TR0(graph):

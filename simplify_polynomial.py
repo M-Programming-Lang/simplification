@@ -169,6 +169,15 @@ def eval_literal(graph, factors=False, minuses=False):
 
     return graph, changes
 
+def expand_multiplication(graph):
+    '''
+    x*(x+2)*(x+1)^2 -> (x*x+2*x)*(1*x^2*1^0+2*x^1*1^1+1*x^0*1^2)
+    -> x*x*1*x^2*1^0+x*x*2*x^1*1^1+x*x*1*x^0*1^2 + 2*x*1*x^2*1^0+2*x*2*x^1*1^1+2*x*1*x^0*1^2   (will be cleaned up later)
+    '''
+    # TODO expand powers (calculating multinomial coefficient without expansion) and then multiplication with inner addition bottom up
+    # also need to make test
+
+
 def simplify_polynomial(graph, factor=True):
 
     '''
@@ -233,5 +242,6 @@ def simplify_polynomial(graph, factor=True):
     graph = simplify_exponent(graph)  # 2
     graph = remove_prefix_minus(graph)  # 3
     graph = eval_literal(graph)  # 4
+    graph = expand_multiplication(graph)  # 5
 
     return graph
