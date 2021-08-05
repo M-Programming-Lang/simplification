@@ -101,11 +101,15 @@ def remove_minus(graph):
 
     return graph
 
+global depth
+depth = 0
+
 @prefix_minus_to_value
 @associative_cases(["+", "*"])
 def eval_literal(graph, factors=False, minuses=False):
 
-    print(graph)
+    print("A")
+    print(graph, end="\n\n\n")
 
     '''
     simplify expressions by evaluating literal function calls bottom up (order *shouldn't* matter):
@@ -126,7 +130,15 @@ def eval_literal(graph, factors=False, minuses=False):
 
     def eval_literal_recursive(graph):
 
+        global depth
+        depth += 1
+        print(depth*"|"+"in")
+        print(depth*"|", graph)
+
         if type(graph) == str:
+            print(depth*"|"+"out")
+            print(depth*"|", graph, end=f"\n{depth*'|'}\n")
+            depth -= 1
             return graph, 0
 
         vals = [eval_literal_recursive(i) for i in graph.vals]
@@ -139,11 +151,11 @@ def eval_literal(graph, factors=False, minuses=False):
         elif graph == node("*", "_", "_") and all([type(i) == str and i not in ["x", "y", "z", "pi"] for i in graph.vals]):  # 2
             graph = str(eval("*".join(graph.vals)))
         elif graph == node("^", "_", "_") and all([type(i) == str and i not in ["x", "y", "z", "pi"] for i in graph.vals]):  # 3
-            graph = str(eval("^".join(graph.vals)))
+            graph = str(eval("**".join(graph.vals)))
         elif graph == node("^", "_", node("*", "_", "_")) and all([type(i) == str and i not in ["x", "y", "z", "pi"] for i in [graph.vals[0], graph.vals[1].vals[0]]]):  # 3
-            graph = node("^", str(eval(graph.vals[0] + "^" + graph.vals[1].vals[0])), graph.vals[1].vals[1])
+            graph = node("^", str(eval(graph.vals[0] + "**" + graph.vals[1].vals[0])), graph.vals[1].vals[1])
         elif graph == node("^", "_", node("*", "_", "_")) and all([type(i) == str and i not in ["x", "y", "z", "pi"] for i in [graph.vals[0], graph.vals[1].vals[1]]]):  # 3
-            graph = node("^", str(eval(graph.vals[0] + "^" + graph.vals[1].vals[1])), graph.vals[1].vals[0])
+            graph = node("^", str(eval(graph.vals[0] + "**" + graph.vals[1].vals[1])), graph.vals[1].vals[0])
         elif graph in [node("*", "1", "_"), node("+", "0", "_")]:  # 4, 5
             graph = graph.vals[1]
         elif graph in [node("*", "_", "1"), node("+", "_", "0"), node("^", "_", "1")]:  # 4, 5, 9
@@ -156,6 +168,10 @@ def eval_literal(graph, factors=False, minuses=False):
         else:  # add one to changes IFF a change is made
             changes -= 1
         changes += 1
+
+        print(depth*"|"+"out")
+        print(depth*"|", graph, end=f"\n{depth*'|'}\n")
+        depth -= 1
 
         return graph, changes
 

@@ -73,6 +73,7 @@ def associative_cases(operations):  # function wrapper to call function on graph
         def get_all_binary_trees(op, leaves):
 
             def list_diff(l1, l2):  # computes l1 - l2 but with [1, 2, 2] - [2] = [1, 2] (not [1])
+                l1, l2 = list(l1), list(l2)
                 for i in l2:
                     l1.remove(i)
                 return l1
@@ -107,7 +108,6 @@ def associative_cases(operations):  # function wrapper to call function on graph
 
         graphs = []
         for g in vals:
-            x = get_all_binary_trees(operators[0], g)
             graphs += get_all_binary_trees(operators[0], g)
 
         if "/" in operators:
