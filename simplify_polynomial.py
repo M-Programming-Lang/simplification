@@ -210,6 +210,20 @@ def expand_multiplication(graph):
 
     return graph
 
+def force_powers(graph, force=False, prev=""):
+
+    if type(graph) == str:
+        if force:
+            return node("^", graph, "1")
+        return graph
+    
+    if force and graph.op not in ["^", prev]:
+        graph = node("^", graph, "1")
+
+    if graph.op in ["*", "+"]:
+        return node(graph.op, *[force_powers(i, True, graph.op) for i in graph.vals])
+    return node(graph.op, *[force_powers(i, False, graph.op) for i in graph.vals])
+
 def simplify_polynomial(graph, factor=True):
 
     '''
@@ -275,5 +289,8 @@ def simplify_polynomial(graph, factor=True):
     graph = remove_prefix_minus(graph)  # 3
     graph = eval_literal(graph)  # 4
     graph = expand_multiplication(graph)  # 5
+    graph = to_prime_factors(graph)  # 6
+    graph = simplify_exponent(graph)  # 7
+    graph = eval_literal(graph)  # 8
 
     return graph

@@ -67,7 +67,12 @@ class TestFu(unittest.TestCase):
             node("+", node("*", node("*", "2", node("*", node("^", "x", "1"), node("^", "1", "1"))), node("*", "2", "x")),
             node("*", node("^", "1", "2"), node("*", "2", "x"))))))
             # (x*(x+2))*(x+1)^2 -> ((1*(x^2*1^0))*(x*x)+((2*(x^1*1^1))*(x*x)+(1^2)*(x*x)))+((1*(x^2*1^0))*(2*x)+
-            #                                                                   ((2*(x^1*1^1))*(2*x)+(1^2)*(2*x)))  
+            #                                                                   ((2*(x^1*1^1))*(2*x)+(1^2)*(2*x)))
+
+            self.assertEqual(force_powers(node("*", "x", node("^", node("+", node("^", "1", "y"), node("*", "2", "3")), "z"))),
+                                          node("*", node("^", "x", "1"), node("^", node("+", node("^", "1", "y"), node("^", node("*",
+                                          node("^", "2", "1"), node("^", "3", "1")), "1")), "z")))
+            # x * (1^y + 2*3)^z -> x^1 * (1^y + (2^1*3^1)^1)^z
 
       def test_TR1(self):
             self.assertEqual(TR1(node("sec", "x")), node("/", "1", node("cos", "x")))
