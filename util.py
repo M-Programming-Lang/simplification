@@ -25,7 +25,7 @@ def prefix_minus_to_value(func):  # convert node("-", "1") to "-1" as wrapper (t
     return pmtv_function
         
 
-def associative_cases(operations):  # function wrapper to call function on graphs that nest nodes in different ways to get same outputs
+def associative_cases(*operations):  # function wrapper to call function on graphs that nest nodes in different ways to get same outputs
     '''
     examples:
      - graph -> list of graphs to call wrapped function on
@@ -138,14 +138,14 @@ def associative_cases(operations):  # function wrapper to call function on graph
 
     def wrapper(simplification):
 
-        def ac_function(graph):  # O(lots)
+        def ac_function(graph, *args):  # O(lots)
 
             if len(operations) > 1 and "+" in operations:
                 simplified_graphs, new_operations = [], [i for i in operations if i != "+"]
                 for new_graph in get_graphs(graph, ["+"]):
-                    simplified_graphs += [simplification(g) for g in get_graphs(new_graph, new_operations)]
+                    simplified_graphs += [simplification(g, *args) for g in get_graphs(new_graph, new_operations)]
             else:
-                simplified_graphs = [simplification(g) for g in get_graphs(graph, operations)]
+                simplified_graphs = [simplification(g, *args) for g in get_graphs(graph, operations)]
             # simplified_graphs is a list of (graph, no. changes)
             return min(simplified_graphs, key=lambda x : (-x[1], count_ops(x[0])))[0]  # only return the graph
 
@@ -168,6 +168,12 @@ class node:
             return False
         return graph.op == self.op and all(["_" in [str(a), str(b)] or a == b for a, b in zip(self.vals, graph.vals)])
 
+    def __lt__(self, graph):
+        return hash(self) < hash(graph)  # just needs to be consistent not logical
+
+    def __hash__(self):
+        return hash(str(self))
+
     def __repr__(self):
         return f"node({self.op}, {', '.join([str(i) for i in self.vals])})"
         #return get_infix(self)
@@ -185,6 +191,22 @@ def get_infix(graph, parens=False):  # for printing the graph with normal notati
     if parens:
         return "(" + get_infix(graph.vals[0], True) + ") " + graph.op + " (" + get_infix(graph.vals[1], True) + ")"
     return get_infix(graph.vals[0]) + " " + graph.op + " " + get_infix(graph.vals[1])
+
+def commutative_eq(g1, g2):
+    if type(g1) == str:
+        if g1 == "_":
+            return True
+        return False
+    if len(g1.vals) != len(g2.vals):
+        return False
+    if g1.op in ["*", "+"]:
+        return g1.op == g2.op and all(["_" in [str(a), str(b)] or a == b for a, b in zip(sorted(g2.vals), sorted(g1.vals))])
+    return g1.op == g2.op and all(["_" in [str(a), str(b)] or a == b for a, b in zip(g2.vals, g1.vals)])
+
+@associative_cases("+", "*", "/")
+def associative_eq(g1, g2):  # also handles commutativity
+    eq = commutative_eq(g1, g2)
+    return eq, eq  # testing if equal in any case (using True > False)
 
 # OTHER FUNCTIONS
 
@@ -213,11 +235,11 @@ def double_neg(graph):  # remove double negatives (e.g. --x -> x)
     return node(graph.op, *[double_neg(i) for i in graph.vals])
 
 def count_ops(graph):
-    if type(graph) == str:
+    if type(graph) in [str, bool]:  # janky workaround for using assocaitive cases with bools
         return 0
-    return 1 + sum(count_trig_ops(i) for i in graph.vals)
+    return 1 + sum(count_ops(i) for i in graph.vals)
 
 def count_trig_ops(graph):
-    if type(graph) == str:
+    if type(graph) in [str, bool]:  # and again
         return 0
     return (graph.op not in ["+", "-", "*", "/", "^"]) + sum(count_trig_ops(i) for i in graph.vals)

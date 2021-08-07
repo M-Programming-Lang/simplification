@@ -101,11 +101,8 @@ def remove_minus(graph):
 
     return graph
 
-global depth
-depth = 0
-
 @prefix_minus_to_value
-@associative_cases(["+", "*"])
+@associative_cases("+", "*", "/")
 def eval_literal(graph, factors=False, minuses=False):
 
     '''
@@ -224,6 +221,30 @@ def force_powers(graph, force=False, prev=""):
         return node(graph.op, *[force_powers(i, True, graph.op) for i in graph.vals])
     return node(graph.op, *[force_powers(i, False, graph.op) for i in graph.vals])
 
+@associative_cases("*", "/")
+def collect_exp(graph):
+
+    def collect_exp_recursive(graph):
+
+        if type(graph) == str:
+            return graph, 0
+
+        vals = [collect_exp_recursive(i) for i in graph.vals]
+        changes = sum([i[1] for i in vals])
+        vals = [i[0] for i in vals]
+        graph = node(graph.op, *vals)
+
+        # TODO: eq function below is insufficient becuase does not cover examples like 2^x*(1+1)^x
+        # Could call simplify_polynomial here without infinite recursion but would be wasteful
+        if graph == node("*", node("^", "_", "_"), node("^", "_", "_")) and associative_eq(graph.vals[0].vals[0], graph.vals[1].vals[0]):
+            graph = node("^", graph.vals[0].vals[0], node("+", graph.vals[0].vals[1], graph.vals[1].vals[1]))
+            changes += 1
+
+        return graph, changes
+
+    return collect_exp_recursive(graph)
+
+
 def simplify_polynomial(graph, factor=True):
 
     '''
@@ -292,5 +313,6 @@ def simplify_polynomial(graph, factor=True):
     graph = to_prime_factors(graph)  # 6
     graph = simplify_exponent(graph)  # 7
     graph = eval_literal(graph)  # 8
+    graph = force_powers(graph)  # 9
 
     return graph

@@ -172,7 +172,7 @@ def TR12(graph):  # tan sum formula
 
     return node(graph.op, *[TR12(i) for i in graph.vals])
 
-@associative_cases(["*", "/"])  # handle tan(a) * (tan(b) / tan(c))
+@associative_cases("*", "/")  # handle tan(a) * (tan(b) / tan(c))
 def TR13(graph):
 
     def recursive_TR13(graph):

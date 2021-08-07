@@ -74,6 +74,10 @@ class TestFu(unittest.TestCase):
                                           node("^", "2", "1"), node("^", "3", "1")), "1")), "z")))
             # x * (1^y + 2*3)^z -> x^1 * (1^y + (2^1*3^1)^1)^z
 
+            self.assertTrue(associative_eq(node("*", "x", node("/", "y", "z")), node("*", "y", node("/", "x", "z"))))
+            self.assertEqual(collect_exp(node("*", node("^", node("+", "1", "2"), "x"), node("^", node("+", "2", "1"), "y"))),
+                                         node("^", node("+", "1", "2"), node("+", "x", "y")))
+
       def test_TR1(self):
             self.assertEqual(TR1(node("sec", "x")), node("/", "1", node("cos", "x")))
             self.assertEqual(TR1(node("sin", node("csc", "x"))), node("sin", node("/", "1", node("sin", "x"))))
