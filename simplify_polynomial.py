@@ -244,6 +244,37 @@ def collect_exp(graph):
 
     return collect_exp_recursive(graph)
 
+def factorise_rationalise_denom(graph):
+
+    '''
+    0. bottom up recursion (inc. on all factors if factorised)
+    1. factorise out constants of addition e.g. a*b*f(x,y,z) + a*c*g(x,y,z) + ... -> a*(b*f(x,y,z) + c*g(x,y,z) + ... )
+    2. if polynomial, could use formula for low orders but since higher orders need to be supported anyway will take brute
+            force approach using factor theorem:
+                a. pick a variable to factorise out (e.g. x in x^3*f(y,z) + x^2*g(y,z) + x*h(y,z))
+                b. take the term with the lowest power (in this case x*h(y, z))
+                c. if the power is higher than x^0 then factorise that out (to get x*(x^2*f(y,z) + x*g(y,z) + h(y,z)))
+                d. take the highest power coefficient of the (in this case) right hand expression (f(y,z))
+                e. make list of all factors of each of these two coefficients (including all combinations using factors of constants)
+                f. take each combination of one from each coefficient and divide the one from the lower power by the higher power
+                g. for each of these check if the expression = 0 if x = the value given (TODO: work out how on earth to do this)
+                h. for the first factor that returns 0 do polynomial long division to factor out (ax-b) where
+                                                            b is the numerator and a is the denominator of the fraction tested
+                for example:
+                a. x in x^2 + 3x + 2
+                b. lowest power is 2
+                c. no
+                d. coef is 1
+                e. lists are [2, 1, -2, -1] and [1, -1]
+                f. fractions are [2, 1, -2, -1]
+                g. [-2, -1] satisfy x^2 + 3x + 2 = 0 when subbed in for x
+                h. first one is 2 so long division to get x^2 + 3x + 2 = (x + 2)(x + 1)
+    3. for each term in addition, rationalise the denominator
+
+    TODO: this system works for constant and linear factors but does not work for higher order
+    e.g. would never factorise to (x^2 + x + 1)^2
+    '''
+
 
 def simplify_polynomial(graph, factor=True):
 
@@ -312,7 +343,10 @@ def simplify_polynomial(graph, factor=True):
     graph = expand_multiplication(graph)  # 5
     graph = to_prime_factors(graph)  # 6
     graph = simplify_exponent(graph)  # 7
-    graph = eval_literal(graph)  # 8
+    graph = eval_literal(graph, True)  # 8
     graph = force_powers(graph)  # 9
+    graph = collect_exp(graph)  # 10
+    graph = eval_literal(graph, True)  # 11
+
 
     return graph
